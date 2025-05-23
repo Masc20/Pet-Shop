@@ -1,4 +1,4 @@
 <?php
-echo "hello world";
-echo "hello world 2";
+echo "pag practice na lagig git BAHAHAHHAHAHAHA ug ari ka mo commit sigurado pa HAHAHAH"; 
+echo "hello madaam";
 ?>
