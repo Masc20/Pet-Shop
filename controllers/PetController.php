@@ -1,21 +1,35 @@
 <?php
 require_once 'models/Pet.php';
+require_once 'core/Helpers.php'; // Include Helpers for search functions
 
 class PetController extends Controller {
     public function index() {
         $petModel = new Pet();
-        $pets = $petModel->getAll();
         
-        // Filter by type if specified
-        $type = $_GET['type'] ?? null;
-        if ($type && in_array($type, ['dogs', 'cats'])) {
-            $pets = array_filter($pets, function($pet) use ($type) {
-                return $pet['type'] === $type;
-            });
-        }
+        // Get current page from URL, default to 1
+        $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        // Get filter parameters from URL
+        $filterQuery = $_GET['query'] ?? '';
+        $filterType = $_GET['type'] ?? '';
         
+        $petsPerPage = 12; // Number of pets per page
+        $offset = ($currentPage - 1) * $petsPerPage;
+        
+        // Get filtered and paginated pets
+        $pets = $petModel->getPetsWithFiltersAndPagination($filterQuery, $filterType, $petsPerPage, $offset);
+        // Get total count of pets matching filters
+        $totalPets = $petModel->getTotalPetsWithFilters($filterQuery, $filterType);
+        
+        // Calculate total pages
+        $totalPages = ceil($totalPets / $petsPerPage);
+        
+        // Pass data to the view
         $this->view('pets/index', [
-            'pets' => $pets
+            'pets' => $pets,
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
+            'filterQuery' => $filterQuery,
+            'filterType' => $filterType
         ]);
     }
     

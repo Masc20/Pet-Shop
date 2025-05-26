@@ -75,6 +75,12 @@ switch ($path) {
         $controller->count();
         break;
     
+    case '/cart/confirm-checkout':
+        require_once 'controllers/CartController.php';
+        $controller = new CartController();
+        $controller->confirmCheckout();
+        break;
+    
     case '/login':
         require_once 'controllers/AuthController.php';
         $controller = new AuthController();
@@ -97,6 +103,12 @@ switch ($path) {
         require_once 'controllers/UserController.php';
         $controller = new UserController();
         $controller->profile();
+        break;
+    
+    case '/profile/update-address':
+        require_once 'controllers/UserController.php';
+        $controller = new UserController();
+        $controller->updateAddress();
         break;
     
     case '/adopted-pets':

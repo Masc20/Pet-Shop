@@ -9,9 +9,6 @@ Folder Structure:
 - users/      - User avatars
 - temp/       - Temporary uploads
 
-Permissions:
-Set folder permissions to 755 or 777 to allow file uploads.
-
 Security:
 - Only image files should be uploaded
 - File types are validated server-side

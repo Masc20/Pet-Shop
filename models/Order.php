@@ -8,8 +8,8 @@ class Order extends Model {
     protected $table = 'orders';
     protected $fillable = [
         'order_number', 'user_id', 'status', 'subtotal', 'tax', 'shipping_cost', 'total',
-        'shipping_address', 'shipping_city', 'shipping_state', 'shipping_zip',
-        'payment_method', 'payment_status', 'notes'
+        'shipping_address', 'shipping_city', 'shipping_barangay', 'shipping_zip',
+        'payment_method', 'notes', 'shipped_date', 'delivery_date', 'cancelled_date'
     ];
 
     private $pdo;
@@ -19,9 +19,9 @@ class Order extends Model {
         $this->pdo = $pdo;
     }
     
-    public function createOrder($userId, $totalAmount) {
-        $stmt = $this->pdo->prepare("INSERT INTO orders (user_id, total_amount) VALUES (?, ?)");
-        $stmt->execute([$userId, $totalAmount]);
+    public function createOrder($userId, $totalAmount, $deliveryAddressId, $paymentMethod) {
+        $stmt = $this->pdo->prepare("INSERT INTO orders (user_id, total_amount, delivery_address_id, payment_method, order_date) VALUES (?, ?, ?, ?, NOW())");
+        $stmt->execute([$userId, $totalAmount, $deliveryAddressId, $paymentMethod]);
         return $this->pdo->lastInsertId();
     }
     
@@ -31,9 +31,19 @@ class Order extends Model {
     }
     
     public function getByUser($userId) {
-        $stmt = $this->pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC");
+        $stmt = $this->pdo->prepare("SELECT o.*, o.shipped_date, da.city, da.barangay, da.street, da.zipcode FROM orders o LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id WHERE o.user_id = ? ORDER BY o.id DESC");
         $stmt->execute([$userId]);
-        return $stmt->fetchAll();
+        $orders = $stmt->fetchAll();
+        foreach ($orders as &$order) {
+            $order['items'] = $this->getItems($order['id']);
+            $order['delivery_address'] = [
+                'city' => $order['city'],
+                'barangay' => $order['barangay'],
+                'street' => $order['street'],
+                'zipcode' => $order['zipcode']
+            ];
+        }
+        return $orders;
     }
     
     public function getById($id) {
@@ -43,13 +53,18 @@ class Order extends Model {
     }
     
     public function getAll() {
-        $stmt = $this->pdo->query("
-            SELECT o.*, u.first_name, u.last_name, u.email 
-            FROM orders o 
-            JOIN users u ON o.user_id = u.id 
-            ORDER BY o.id DESC
-        ");
-        return $stmt->fetchAll();
+        $stmt = $this->pdo->query("SELECT o.*, u.first_name, u.last_name, u.email, da.city, da.barangay, da.street, da.zipcode FROM orders o JOIN users u ON o.user_id = u.id LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id ORDER BY o.id DESC");
+        $orders = $stmt->fetchAll();
+        foreach ($orders as &$order) {
+            $order['items'] = $this->getItems($order['id']);
+            $order['delivery_address'] = [
+                'city' => $order['city'],
+                'barangay' => $order['barangay'],
+                'street' => $order['street'],
+                'zipcode' => $order['zipcode']
+            ];
+        }
+        return $orders;
     }
     
     public function getItems($orderId) {
@@ -102,7 +117,7 @@ class Order extends Model {
             'total' => $cartSummary['total'],
             'shipping_address' => sanitize_string($shippingData['shipping_address']),
             'shipping_city' => sanitize_string($shippingData['shipping_city']),
-            'shipping_state' => sanitize_string($shippingData['shipping_state']),
+            'shipping_barangay' => sanitize_string($shippingData['shipping_barangay']),
             'shipping_zip' => sanitize_string($shippingData['shipping_zip']),
             'payment_method' => sanitize_string($shippingData['payment_method']),
             'payment_status' => 'pending',
@@ -160,32 +175,45 @@ class Order extends Model {
     }
     
     public function updateStatus($orderId, $status, $notes = null) {
+        // Debug: Log the update data
+        error_log("Updating order {$orderId} to status: {$status}");
+        
+        // Prepare the update data
         $updateData = ['status' => $status];
         
-        if ($notes) {
-            $updateData['notes'] = $notes;
-        }
-        
-        // Set specific timestamps based on status
+        // Set dates based on status
         switch ($status) {
-            case 'processing':
-                $updateData['processed_at'] = now();
-                break;
             case 'shipped':
-                $updateData['shipped_at'] = now();
+                $updateData['shipped_date'] = date('Y-m-d H:i:s');
                 break;
             case 'delivered':
-                $updateData['delivered_at'] = now();
-                $updateData['payment_status'] = 'completed';
-                break;
-            case 'cancelled':
-                $updateData['cancelled_at'] = now();
-                // Restore product stock
-                $this->restoreStock($orderId);
+                $updateData['delivery_date'] = date('Y-m-d H:i:s');
                 break;
         }
         
-        return $this->update($orderId, $updateData);
+        // Build the SQL query dynamically based on the update data
+        $setParts = [];
+        $params = [];
+        foreach ($updateData as $key => $value) {
+            $setParts[] = "{$key} = ?";
+            $params[] = $value;
+        }
+        $params[] = $orderId; // Add orderId for WHERE clause
+        
+        $sql = "UPDATE orders SET " . implode(', ', $setParts) . " WHERE id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $result = $stmt->execute($params);
+        
+        if (!$result) {
+            error_log("Status update failed: " . json_encode($stmt->errorInfo()));
+        }
+        
+        // Handle stock restoration for cancelled orders
+        if ($status === 'cancelled') {
+            $this->restoreStock($orderId);
+        }
+        
+        return $result;
     }
     
     public function restoreStock($orderId) {
@@ -316,6 +344,107 @@ class Order extends Model {
         }
         
         return $result;
+    }
+
+    // Get all orders with pagination for admin view
+    public function getAdminPaginated($limit, $offset, $query = null, $status = null, $startDate = null, $endDate = null) {
+        // Changed: Added search, status, and date range filters
+        $sql = "SELECT o.*, u.first_name, u.last_name, u.email, da.city, da.barangay, da.street, da.zipcode 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id
+                WHERE 1"; // Start with WHERE 1 to easily append conditions
+
+        $params = [];
+
+        // Add search query filter
+        if ($query) {
+            $sql .= " AND (o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add status filter
+        if ($status) {
+            $sql .= " AND o.status = ?";
+            $params[] = $status;
+        }
+
+        // Add date range filter
+        if ($startDate) {
+            $sql .= " AND o.order_date >= ?";
+            $params[] = $startDate . ' 00:00:00'; // Include start of the day
+        }
+        if ($endDate) {
+            $sql .= " AND o.order_date <= ?";
+            $params[] = $endDate . ' 23:59:59'; // Include end of the day
+        }
+
+        $sql .= " ORDER BY o.order_date DESC LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Manually add delivery address details if needed (already done in getAll, replicating here)
+        foreach ($orders as &$order) {
+            // Ensure delivery_address is structured as an array
+            $order['delivery_address'] = [
+                'city' => $order['city'] ?? null,
+                'barangay' => $order['barangay'] ?? null,
+                'street' => $order['street'] ?? null,
+                'zipcode' => $order['zipcode'] ?? null
+            ];
+             // Unset redundant keys if necessary (optional)
+             unset($order['city'], $order['barangay'], $order['street'], $order['zipcode']);
+
+            // Fetch order items
+            $order['items'] = $this->getItems($order['id']);
+        }
+
+        return $orders;
+    }
+
+    // Get the total count of all orders with search and optional filters for admin view
+    public function getAdminTotalCount($query = null, $status = null, $startDate = null, $endDate = null) {
+        $sql = "SELECT COUNT(*) 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id
+                WHERE 1"; // Start with WHERE 1 to easily append conditions
+
+        $params = [];
+
+        // Add search query filter
+        if ($query) {
+            $sql .= " AND (o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add status filter
+        if ($status) {
+            $sql .= " AND o.status = ?";
+            $params[] = $status;
+        }
+
+        // Add date range filter
+        if ($startDate) {
+            $sql .= " AND o.order_date >= ?";
+            $params[] = $startDate . ' 00:00:00'; // Include start of the day
+        }
+        if ($endDate) {
+            $sql .= " AND o.order_date <= ?";
+            $params[] = $endDate . ' 23:59:59'; // Include end of the day
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
     }
 }
 ?>

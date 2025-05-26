@@ -35,11 +35,6 @@
                             <input type="tel" class="form-control" id="phone" name="phone">
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="address" class="form-label">Address</label>
-                            <textarea class="form-control" id="address" name="address" rows="3"></textarea>
-                        </div>
-                        
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-user-plus"></i> Register

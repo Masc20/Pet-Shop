@@ -8,7 +8,7 @@ class User extends Model {
     protected $table = 'users';
     protected $fillable = [
         'first_name', 'last_name', 'email', 'phone', 'address',
-        'city', 'state', 'zip_code', 'date_of_birth', 'avatar',
+        'city', 'barangay', 'zip_code', 'date_of_birth', 'avatar',
         'email_verified_at', 'status', 'role'
     ];
     
@@ -43,8 +43,8 @@ class User extends Model {
     }
     
     public function update($id, $data) {
-        $stmt = $this->pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ? WHERE id = ?");
-        return $stmt->execute([$data['first_name'], $data['last_name'], $data['email'], $data['phone'], $data['address'], $id]);
+        $stmt = $this->pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, avatar = ? WHERE id = ?");
+        return $stmt->execute([$data['first_name'], $data['last_name'], $data['email'], $data['phone'], $data['address'], $data['avatar'] ?? null, $id]);
     }
     
     public function updateRole($id, $role) {
@@ -249,6 +249,81 @@ class User extends Model {
             'password_reset_token' => null,
             'password_reset_expires' => null
         ]);
+    }
+
+    public function getPrimaryDeliveryAddress($userId) {
+        $stmt = $this->pdo->prepare("SELECT * FROM delivery_addresses WHERE user_id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        return $stmt->fetch();
+    }
+
+    public function findOrCreateDeliveryAddress($userId, $city, $barangay, $street, $zipcode) {
+        // Check if address already exists for the user
+        $stmt = $this->pdo->prepare("SELECT id FROM delivery_addresses WHERE user_id = ? AND city = ? AND barangay = ? AND street = ? AND zipcode = ? LIMIT 1");
+        $stmt->execute([$userId, $city, $barangay, $street, $zipcode]);
+        $existingAddress = $stmt->fetch();
+
+        if ($existingAddress) {
+            return $existingAddress['id'];
+        } else {
+            // Create new address
+            $stmt = $this->pdo->prepare("INSERT INTO delivery_addresses (user_id, city, barangay, street, zipcode) VALUES (?, ?, ?, ?, ?)");
+            if ($stmt->execute([$userId, $city, $barangay, $street, $zipcode])) {
+                return $this->pdo->lastInsertId();
+            } else {
+                return false; // Indicate failure
+            }
+        }
+    }
+
+    // Get all users with pagination for admin view
+    public function getAdminPaginated($limit, $offset, $query = null, $role = null) {
+        $sql = "SELECT * FROM users WHERE 1"; // Start with WHERE 1 to easily append conditions
+        $params = [];
+
+        // Add search query filter (by name or email)
+        if ($query) {
+            $sql .= " AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add role filter
+        if ($role) {
+            $sql .= " AND role = ?";
+            $params[] = $role;
+        }
+
+        $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Get the total count of all users with search and optional role filter for admin view
+    public function getAdminTotalCount($query = null, $role = null) {
+        $sql = "SELECT COUNT(*) FROM users WHERE 1"; // Start with WHERE 1
+        $params = [];
+
+        // Add search query filter (by name or email)
+        if ($query) {
+            $sql .= " AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add role filter
+        if ($role) {
+            $sql .= " AND role = ?";
+            $params[] = $role;
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
     }
 }
 ?>

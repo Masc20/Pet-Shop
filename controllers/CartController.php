@@ -7,6 +7,7 @@
 require_once 'models/Cart.php';
 require_once 'models/Order.php';
 require_once 'models/Product.php';
+require_once 'models/User.php';
 
 class CartController extends Controller {
     
@@ -88,33 +89,90 @@ class CartController extends Controller {
             $this->redirect('/login');
             return;
         }
-        
+
         $cartModel = new Cart();
-        $orderModel = new Order();
-        $productModel = new Product();
-        
         $items = $cartModel->getItems($_SESSION['user_id']);
         $total = $cartModel->getTotal($_SESSION['user_id']);
-        
+
         if (empty($items)) {
             $this->redirect('/cart');
             return;
         }
+
+        // Show confirmation page for address/payment
+        $userModel = new User();
+        $user = $userModel->getById($_SESSION['user_id']);
         
-        // Create order
-        $orderId = $orderModel->createOrder($_SESSION['user_id'], $total);
-        
-        // Add order items and update stock
-        foreach ($items as $item) {
-            $orderModel->addItem($orderId, $item['product_id'], $item['quantity'], $item['price']);
-            $productModel->updateStock($item['product_id'], $item['quantity']);
+        // Fetch user's primary delivery address
+        $deliveryAddress = $userModel->getPrimaryDeliveryAddress($_SESSION['user_id']);
+
+        $this->view('cart/checkout', [
+            'items' => $items,
+            'total' => $total,
+            'user' => $user,
+            'delivery_address' => $deliveryAddress // Pass delivery address to the view
+        ]);
+    }
+
+    public function confirmCheckout() {
+        if (!isLoggedIn()) {
+            $this->redirect('/login');
+            return;
         }
-        
-        // Clear cart
-        $cartModel->clearCart($_SESSION['user_id']);
-        
-        $_SESSION['success'] = 'Order placed successfully!';
-        $this->redirect('/profile');
+
+        $cartModel = new Cart();
+        $orderModel = new Order();
+        $productModel = new Product();
+        $userModel = new User();
+
+        $items = $cartModel->getItems($_SESSION['user_id']);
+        $total = $cartModel->getTotal($_SESSION['user_id']);
+
+        if (empty($items)) {
+            $this->redirect('/cart');
+            return;
+        }
+
+        // Get address details from POST
+        $city = $_POST['city'] ?? '';
+        $barangay = $_POST['barangay'] ?? '';
+        $street = $_POST['street'] ?? '';
+        $zipcode = $_POST['zipcode'] ?? '';
+        $paymentMethod = $_POST['payment_method'] ?? '';
+
+        // Validate address fields (basic check)
+        if (empty($city) || empty($barangay) || empty($street) || empty($zipcode)) {
+            $_SESSION['error'] = 'Please provide a complete delivery address.';
+            $this->redirect('/cart/checkout');
+            return;
+        }
+
+        // Find or create the delivery address and get its ID
+        $deliveryAddressId = $userModel->findOrCreateDeliveryAddress($_SESSION['user_id'], $city, $barangay, $street, $zipcode);
+
+        if (!$deliveryAddressId) {
+             $_SESSION['error'] = 'Failed to save delivery address.';
+            $this->redirect('/cart/checkout');
+            return;
+        }
+
+        // Create order with delivery_address_id
+        $orderId = $orderModel->createOrder($_SESSION['user_id'], $total, $deliveryAddressId, $paymentMethod);
+
+        if ($orderId) {
+            foreach ($items as $item) {
+                // Assuming addItem in Order model takes price as well
+                $orderModel->addItem($orderId, $item['product_id'], $item['quantity'], $item['price']);
+                $productModel->updateStock($item['product_id'], $item['quantity']);
+            }
+
+            $cartModel->clearCart($_SESSION['user_id']);
+            $_SESSION['success'] = 'Order placed successfully!';
+            $this->redirect('/profile'); // Redirect to profile or order details page
+        } else {
+            $_SESSION['error'] = 'Failed to place order.';
+            $this->redirect('/cart/checkout');
+        }
     }
     
     public function count() {

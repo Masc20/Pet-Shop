@@ -1,7 +1,0 @@
-checkout:
-Missing methods on Order.php
-createOrder
-
-proper image
-proper modal 3
-order details

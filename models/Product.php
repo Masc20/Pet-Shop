@@ -54,6 +54,11 @@ class Product {
         return $stmt->execute([$quantity, $id]);
     }
     
+    public function restoreStock($id, $quantity) {
+        $stmt = $this->pdo->prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?");
+        return $stmt->execute([$quantity, $id]);
+    }
+    
     public function getStats() {
         $stmt = $this->pdo->query("SELECT 
             COUNT(*) as total,
@@ -88,6 +93,144 @@ class Product {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    // Get products with pagination, search, and optional filters
+    public function getPaginated($limit, $offset, $type = null, $minPrice = null, $maxPrice = null, $query = null) {
+        $sql = "SELECT * FROM products WHERE is_archived = FALSE";
+        $params = [];
+
+        // Add type filter
+        if ($type && in_array($type, ['food', 'accessory'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        // Add price range filter
+        if ($minPrice !== null && $minPrice !== '') {
+            $sql .= " AND price >= ?";
+            $params[] = $minPrice;
+        }
+        if ($maxPrice !== null && $maxPrice !== '') {
+            $sql .= " AND price <= ?";
+            $params[] = $maxPrice;
+        }
+
+        // Add search query filter
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR description LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Get the total count of products with search and optional filters
+    public function getTotalCount($type = null, $minPrice = null, $maxPrice = null, $query = null) {
+        $sql = "SELECT COUNT(*) FROM products WHERE is_archived = FALSE";
+        $params = [];
+
+        // Add type filter
+        if ($type && in_array($type, ['food', 'accessory'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        // Add price range filter
+        if ($minPrice !== null && $minPrice !== '') {
+            $sql .= " AND price >= ?";
+            $params[] = $minPrice;
+        }
+        if ($maxPrice !== null && $maxPrice !== '') {
+            $sql .= " AND price <= ?";
+            $params[] = $maxPrice;
+        }
+
+        // Add search query filter
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR description LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
+    }
+
+    // Get archived products with pagination for admin view
+    public function getArchivedPaginated($limit, $offset) {
+        $sql = "SELECT * FROM products WHERE is_archived = TRUE ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Get the total count of archived products for admin view
+    public function getArchivedTotalCount() {
+        $sql = "SELECT COUNT(*) FROM products WHERE is_archived = TRUE";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchColumn();
+    }
+
+    // Get all products with pagination, search, and optional archived filter for admin view
+    public function getAdminPaginated($limit, $offset, $query = null, $isArchived = null) {
+        $sql = "SELECT * FROM products WHERE 1";
+        $params = [];
+
+        // Add search query filter
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR description LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add archived filter
+        if ($isArchived !== null && ($isArchived === '0' || $isArchived === '1')) {
+             $sql .= " AND is_archived = ?";
+             $params[] = (int)$isArchived; // Cast to integer
+        }
+
+        $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Get the total count of all products with search and optional archived filter for admin view
+    public function getAdminTotalCount($query = null, $isArchived = null) {
+        $sql = "SELECT COUNT(*) FROM products WHERE 1";
+        $params = [];
+
+        // Add search query filter
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR description LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add archived filter
+        if ($isArchived !== null && ($isArchived === '0' || $isArchived === '1')) {
+            $sql .= " AND is_archived = ?";
+            $params[] = (int)$isArchived; // Cast to integer
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
+    }
+
+    public function getAllProducts() {
+        $sql = "SELECT * FROM products ORDER BY id DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

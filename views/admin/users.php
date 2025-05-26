@@ -32,7 +32,33 @@
         
         <div class="col-md-10">
             <h1 class="fw-bold mb-4">Manage Users</h1>
-            
+
+            <!-- Search and Filter Form for Admin Users -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <form method="GET" action="<?php echo BASE_URL; ?>/admin/users">
+                        <div class="row g-3">
+                            <div class="col-md">
+                                <input type="text" name="q" class="form-control" placeholder="Search users by Name or Email..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                            </div>
+                             <div class="col-md">
+                                <select name="role" class="form-select">
+                                    <option value="">All Roles</option>
+                                    <option value="user" <?php echo (isset($_GET['role']) && $_GET['role'] === 'user') ? 'selected' : ''; ?>>User</option>
+                                    <option value="admin" <?php echo (isset($_GET['role']) && $_GET['role'] === 'admin') ? 'selected' : ''; ?>>Admin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-auto">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+                                <?php if (isset($_GET['q']) || isset($_GET['role'])): ?>
+                                     <a href="<?php echo BASE_URL; ?>/admin/users" class="btn btn-outline-secondary">Clear Filters</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
@@ -120,6 +146,23 @@
                     </div>
                 </div>
             </div>
+
+            <?php if ($totalPages > 1): ?>
+            <nav aria-label="Admin user pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <?php echo ($currentPage <= 1) ? 'disabled' : ''; ?>">
+                        <a class="page-link" href="<?php echo BASE_URL; ?>/admin/users?page=<?php echo $currentPage - 1; ?>">Previous</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <li class="page-item <?php echo ($i == $currentPage) ? 'active' : ''; ?>"><a class="page-link" href="<?php echo BASE_URL; ?>/admin/users?page=<?php echo $i; ?>"><?php echo $i; ?></a></li>
+                    <?php endfor; ?>
+                    <li class="page-item <?php echo ($currentPage >= $totalPages) ? 'disabled' : ''; ?>">
+                        <a class="page-link" href="<?php echo BASE_URL; ?>/admin/users?page=<?php echo $currentPage + 1; ?>">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            <?php endif; ?>
+
         </div>
     </div>
 </div>

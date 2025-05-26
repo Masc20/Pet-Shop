@@ -20,7 +20,7 @@
             <?php foreach ($adoptedPets as $pet): ?>
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card pet-card h-100">
-                    <img src="<?php echo $pet['pet_image']; ?>" class="card-img-top" style="height: 250px; object-fit: cover;" alt="<?php echo $pet['name']; ?>">
+                    <img src="<?php echo BASE_URL . $pet['pet_image']; ?>" class="card-img-top" style="height: 250px; object-fit: cover;" alt="<?php echo $pet['name']; ?>">
                     <div class="card-body text-center">
                         <h5 class="card-title"><?php echo $pet['name']; ?></h5>
                         <p class="card-text">

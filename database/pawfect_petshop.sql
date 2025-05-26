@@ -1,27 +1,27 @@
 -- Pawfect Pet Shop Database Schema
 -- No date fields as requested
 
-CREATE DATABASE IF NOT EXISTS pawfect_petshop;
-USE pawfect_petshop;
+CREATE DATABASE IF NOT EXISTS pawfect_db;
+USE pawfect_db;
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    avatar TEXT NOT NULL DEFAULT '/uploads/placeholder.png',
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password TEXT NOT NULL,
     phone VARCHAR(20),
-    address TEXT,
     role ENUM('user', 'admin') DEFAULT 'user',
     is_banned BOOLEAN DEFAULT FALSE
 );
 
 -- Pets table
-CREATE TABLE pets (
+CREATE TABLE IF NOT EXISTS pets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    pet_image VARCHAR(255),
+    pet_image TEXT NOT NULL DEFAULT '/uploads/placeholder.png',
     is_adopted BOOLEAN DEFAULT FALSE,
     type ENUM('cats', 'dogs') NOT NULL,
     gender ENUM('male', 'female') NOT NULL,
@@ -32,10 +32,10 @@ CREATE TABLE pets (
 );
 
 -- Products table
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
-    product_image VARCHAR(255),
+    product_image TEXT NOT NULL DEFAULT '/uploads/placeholder.png',
     stock_quantity INT DEFAULT 0,
     type ENUM('accessories', 'foods') NOT NULL,
     price DECIMAL(10,2) NOT NULL,
@@ -43,8 +43,19 @@ CREATE TABLE products (
     is_archived BOOLEAN DEFAULT FALSE
 );
 
+-- Create delivery_addresses table
+CREATE TABLE IF NOT EXISTS delivery_addresses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    street VARCHAR(255) NOT NULL,
+    zipcode VARCHAR(20) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Cart table
-CREATE TABLE cart (
+CREATE TABLE IF NOT EXISTS cart (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -54,16 +65,22 @@ CREATE TABLE cart (
 );
 
 -- Orders table
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    shipped_date DATETIME NULL,
+    delivered_date DATETIME NULL,
+    payment_method ENUM('COD', 'GCASH') DEFAULT 'COD',
+    delivery_address_id INT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (delivery_address_id) REFERENCES delivery_addresses(id)
 );
 
 -- Order items table
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -73,8 +90,19 @@ CREATE TABLE order_items (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+-- Shipments table
+CREATE TABLE IF NOT EXISTS shipments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    shipped_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    tracking_number VARCHAR(100),
+    carrier VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'shipped',
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+
 -- Settings table for admin customization
-CREATE TABLE settings (
+CREATE TABLE IF NOT EXISTS settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     setting_key VARCHAR(100) UNIQUE NOT NULL,
     setting_value TEXT
@@ -86,7 +114,7 @@ VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScy
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES 
-('site_logo', 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Pawfect%20Pet%20Shop%20Logo.jpg-6fGiYU6pBXv98KAwkeHcJlMTwozOXO.jpeg'),
+('site_logo', 'http://localhost/Pawfect/public/uploads/logo/6834bad72c5c5_PawfectPetShopLogo.jpg'),
 ('primary_color', '#FF8C00'),
 ('secondary_color', '#FFD700');
 
@@ -105,7 +133,7 @@ INSERT INTO products (name, product_image, stock_quantity, type, price, descript
 ('Cat Food Premium', '/placeholder.svg?height=200&width=200', 40, 'foods', 24.99, 'Nutritious food for cats');
 
 -- Create uploads directory structure in database (for tracking)
-CREATE TABLE `uploads` (
+CREATE TABLE IF NOT EXISTS uploads (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `filename` varchar(255) NOT NULL,
   `original_name` varchar(255) NOT NULL,
@@ -121,3 +149,4 @@ CREATE TABLE `uploads` (
   KEY `idx_entity` (`entity_type`, `entity_id`),
   FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

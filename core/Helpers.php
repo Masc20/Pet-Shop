@@ -377,14 +377,6 @@ function csrf_token()
 }
 
 /**
- * Show alert helper
- */
-function showAlert($message, $type = 'info')
-{
-    $_SESSION[$type] = $message;
-}
-
-/**
  * Search Helper Functions
  */
 function searchProducts($query, $limit = 20)

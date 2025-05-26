@@ -140,57 +140,29 @@ function updateCartCount() {
  */
 function initializeAlerts() {
   // Auto-hide alerts after 5 seconds
-  const alerts = document.querySelectorAll(".alert:not(.alert-permanent)")
-  alerts.forEach((alert) => {
-    setTimeout(() => {
-      if (alert.parentNode) {
-        alert.style.opacity = "0"
-        setTimeout(() => {
-          if (alert.parentNode) {
-            alert.remove()
-          }
-        }, 300)
-      }
-    }, 5000)
-  })
+  // This is for the old alert system, can be removed if only using modals
+  // const alerts = document.querySelectorAll(".alert:not(.alert-permanent)");
+  // alerts.forEach((alert) => {
+  //   setTimeout(() => {
+  //     if (alert.parentNode) {
+  //       alert.style.opacity = "0";
+  //       setTimeout(() => {
+  //         if (alert.parentNode) {
+  //           alert.remove();
+  //         }
+  //       }, 300);
+  //     }
+  //   }, 5000);
+  // });
 }
 
 /**
- * Show alert message
+ * Show alert message (using modal)
  */
-function showAlert(message, type = "info", duration = 5000) {
-  const alertContainer = document.getElementById("alert-container")
-  if (!alertContainer) return
-
-  const alertId = "alert-" + Date.now()
-  const alertHtml = `
-        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
-            <i class="fas fa-${getAlertIcon(type)} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `
-
-  alertContainer.insertAdjacentHTML("beforeend", alertHtml)
-
-  // Auto-hide after duration
-  if (duration > 0) {
-    setTimeout(() => {
-      const alert = document.getElementById(alertId)
-      if (alert) {
-        alert.style.opacity = "0"
-        setTimeout(() => {
-          if (alert.parentNode) {
-            alert.remove()
-          }
-        }, 300)
-      }
-    }, duration)
-  }
-}
+// Removed the old showAlert function definition
 
 /**
- * Get icon for alert type
+ * Get icon for alert type (still useful for modal)
  */
 function getAlertIcon(type) {
   const icons = {
@@ -252,15 +224,15 @@ function addToCart(productId, quantity = 1) {
     .then((data) => {
       if (data.success) {
         updateCartCount()
-        showAlert(data.message, "success")
+        showAlertModal(data.message, "success")
       } else {
-        showAlert(data.message, "error")
+        showAlertModal(data.message, "danger")
       }
       return data
     })
     .catch((error) => {
       console.error("Error adding to cart:", error)
-      showAlert("Failed to add product to cart", "error")
+      showAlertModal("Failed to add product to cart", "danger")
       throw error
     })
 }
@@ -281,17 +253,22 @@ function updateCartQuantity(cartItemId, quantity) {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
-        updateCartCount()
-        showAlert(data.message, "success")
+        // Update total or refresh page as needed
+        console.log("Cart updated successfully:", data)
+        // Show success modal
+        showAlertModal(data.message, "success")
+        // Consider updating the UI without full reload for better UX
+        location.reload() // Simple reload for now
       } else {
-        showAlert(data.message, "error")
+        console.error("Error updating cart:", data)
+        // Show error modal
+        showAlertModal(data.message, "danger")
       }
-      return data
     })
     .catch((error) => {
       console.error("Error updating cart:", error)
-      showAlert("Failed to update cart", "error")
-      throw error
+      // Show generic error modal
+      showAlertModal("Failed to update cart", "danger")
     })
 }
 
@@ -369,11 +346,11 @@ function copyToClipboard(text) {
     navigator.clipboard
       .writeText(text)
       .then(() => {
-        showAlert("Copied to clipboard!", "success", 2000)
+        showAlertModal("Copied to clipboard!", "success", 2000)
       })
       .catch((err) => {
         console.error("Failed to copy: ", err)
-        showAlert("Failed to copy to clipboard", "error")
+        showAlertModal("Failed to copy to clipboard", "danger")
       })
   } else {
     // Fallback for older browsers
@@ -384,10 +361,10 @@ function copyToClipboard(text) {
     textArea.select()
     try {
       document.execCommand("copy")
-      showAlert("Copied to clipboard!", "success", 2000)
+      showAlertModal("Copied to clipboard!", "success", 2000)
     } catch (err) {
       console.error("Failed to copy: ", err)
-      showAlert("Failed to copy to clipboard", "error")
+      showAlertModal("Failed to copy to clipboard", "danger")
     }
     document.body.removeChild(textArea)
   }
@@ -452,7 +429,7 @@ function removeUrlParameter(name) {
 
 // Export functions for use in other scripts
 window.PawfectApp = {
-  showAlert,
+  showAlertModal,
   addToCart,
   updateCartQuantity,
   updateCartCount,

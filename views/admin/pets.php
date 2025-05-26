@@ -37,6 +37,48 @@
                     <i class="fas fa-plus"></i> Add New Pet
                 </button>
             </div>
+
+            <!-- Search and Filter Form for Admin Pets -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <form method="GET" action="<?php echo BASE_URL; ?>/admin/pets">
+                        <div class="row g-3">
+                            <div class="col-md">
+                                <input type="text" name="q" class="form-control" placeholder="Search pets..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md">
+                                <select name="type" class="form-select">
+                                    <option value="">All Categories</option>
+                                    <option value="dogs" <?php echo (isset($_GET['type']) && $_GET['type'] === 'dogs') ? 'selected' : ''; ?>>Dogs</option>
+                                    <option value="cats" <?php echo (isset($_GET['type']) && $_GET['type'] === 'cats') ? 'selected' : ''; ?>>Cats</option>
+                                </select>
+                            </div>
+                            <div class="col-md">
+                                <select name="gender" class="form-select">
+                                    <option value="">All Genders</option>
+                                    <option value="male" <?php echo (isset($_GET['gender']) && $_GET['gender'] === 'male') ? 'selected' : ''; ?>>Male</option>
+                                    <option value="female" <?php echo (isset($_GET['gender']) && $_GET['gender'] === 'female') ? 'selected' : ''; ?>>Female</option>
+                                </select>
+                            </div>
+                             <div class="col-md">
+                                <input type="text" name="breed" class="form-control" placeholder="Filter by Breed" value="<?php echo htmlspecialchars($_GET['breed'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-auto">
+                                <input type="number" name="min_age" class="form-control" placeholder="Min Age" min="0" value="<?php echo htmlspecialchars($_GET['min_age'] ?? ''); ?>">
+                           </div>
+                            <div class="col-md-auto">
+                                <input type="number" name="max_age" class="form-control" placeholder="Max Age" min="0" value="<?php echo htmlspecialchars($_GET['max_age'] ?? ''); ?>">
+                           </div>
+                            <div class="col-md-auto">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+                                <?php if (isset($_GET['q']) || isset($_GET['type']) || isset($_GET['gender']) || isset($_GET['breed']) || isset($_GET['min_age']) || isset($_GET['max_age'])): ?>
+                                     <a href="<?php echo BASE_URL; ?>/admin/pets" class="btn btn-outline-secondary">Clear Filters</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
             
             <div class="card">
                 <div class="card-body">
@@ -60,7 +102,7 @@
                                 <tr>
                                     <td><?php echo $pet['id']; ?></td>
                                     <td>
-                                        <img src="<?php echo $pet['pet_image']; ?>" alt="<?php echo $pet['name']; ?>" 
+                                        <img src="<?php echo BASE_URL . $pet['pet_image']; ?>" alt="<?php echo $pet['name']; ?>" 
                                              style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                                     </td>
                                     <td><?php echo $pet['name']; ?></td>
@@ -94,6 +136,23 @@
                     </div>
                 </div>
             </div>
+
+            <?php if ($totalPages > 1): ?>
+            <nav aria-label="Admin pet pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <?php echo ($currentPage <= 1) ? 'disabled' : ''; ?>">
+                        <a class="page-link" href="<?php echo BASE_URL; ?>/admin/pets?page=<?php echo $currentPage - 1; ?>">Previous</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <li class="page-item <?php echo ($i == $currentPage) ? 'active' : ''; ?>"><a class="page-link" href="<?php echo BASE_URL; ?>/admin/pets?page=<?php echo $i; ?>"><?php echo $i; ?></a></li>
+                    <?php endfor; ?>
+                    <li class="page-item <?php echo ($currentPage >= $totalPages) ? 'disabled' : ''; ?>">
+                        <a class="page-link" href="<?php echo BASE_URL; ?>/admin/pets?page=<?php echo $currentPage + 1; ?>">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            <?php endif; ?>
+
         </div>
     </div>
 </div>
@@ -106,7 +165,7 @@
                 <h5 class="modal-title">Add New Pet</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="create">
                     
@@ -116,8 +175,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Image URL</label>
-                        <input type="url" class="form-control" name="pet_image" placeholder="/placeholder.svg?height=300&width=300">
+                        <label class="form-label">Pet Image</label>
+                        <input type="file" class="form-control" name="pet_image" accept="image/*" required>
                     </div>
                     
                     <div class="row">
@@ -165,10 +224,11 @@
                 <h5 class="modal-title">Edit Pet</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" id="editPetForm">
+            <form method="POST" enctype="multipart/form-data" id="editPetForm">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="id" id="edit_pet_id">
+                    <input type="hidden" name="current_pet_image" id="edit_current_pet_image">
                     
                     <div class="mb-3">
                         <label class="form-label">Pet Name</label>
@@ -176,8 +236,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Image URL</label>
-                        <input type="url" class="form-control" name="pet_image" id="edit_pet_image">
+                        <label class="form-label">Pet Image</label>
+                        <input type="file" class="form-control" name="pet_image" id="edit_pet_image" accept="image/*">
                     </div>
                     
                     <div class="row">
@@ -226,6 +286,7 @@ function editPet(pet) {
     document.getElementById('edit_gender').value = pet.gender;
     document.getElementById('edit_age').value = pet.age;
     document.getElementById('edit_breed').value = pet.breed;
+    document.getElementById('edit_current_pet_image').value = pet.pet_image;
     
     new bootstrap.Modal(document.getElementById('editPetModal')).show();
 }

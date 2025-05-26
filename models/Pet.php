@@ -121,4 +121,209 @@ class Pet
         $stmt->execute([$minAge, $maxAge]);
         return $stmt->fetchAll();
     }
+
+    // Get pets with pagination, search, and optional filters
+    public function getPaginated($limit, $offset, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null, $query = null) {
+        $sql = "SELECT * FROM pets WHERE is_adopted = FALSE";
+        $params = [];
+
+        // Add type filter
+        if ($type && in_array($type, ['dog', 'cat'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        // Add gender filter
+        if ($gender && in_array($gender, ['male', 'female'])) {
+            $sql .= " AND gender = ?";
+            $params[] = $gender;
+        }
+
+        // Add breed filter
+        if ($breed) {
+            $sql .= " AND breed LIKE ?";
+            $params[] = "%" . $breed . "%";
+        }
+
+        // Add age range filter
+        if ($minAge !== null && $minAge !== '') {
+            $sql .= " AND age >= ?";
+            $params[] = $minAge;
+        }
+        if ($maxAge !== null && $maxAge !== '') {
+            $sql .= " AND age <= ?";
+            $params[] = $maxAge;
+        }
+
+        // Add search query filter (by name or breed)
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR breed LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get the total count of pets with search and optional filters
+    public function getTotalCount($type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null, $query = null) {
+        $sql = "SELECT COUNT(*) FROM pets WHERE is_adopted = FALSE";
+        $params = [];
+
+        // Add type filter
+        if ($type && in_array($type, ['dog', 'cat'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        // Add gender filter
+        if ($gender && in_array($gender, ['male', 'female'])) {
+            $sql .= " AND gender = ?";
+            $params[] = $gender;
+        }
+
+        // Add breed filter
+        if ($breed) {
+            $sql .= " AND breed LIKE ?";
+            $params[] = "%" . $breed . "%";
+        }
+
+        // Add age range filter
+        if ($minAge !== null && $minAge !== '') {
+            $sql .= " AND age >= ?";
+            $params[] = $minAge;
+        }
+        if ($maxAge !== null && $maxAge !== '') {
+            $sql .= " AND age <= ?";
+            $params[] = $maxAge;
+        }
+
+        // Add search query filter (by name or breed)
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR breed LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
+    }
+
+    // Get all pets with pagination, search, and optional filters for admin view
+    public function getAdminPaginated($limit, $offset, $query = null, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null) {
+        $sql = "SELECT * FROM pets WHERE 1"; // Start with WHERE 1 to easily append conditions
+        $params = [];
+
+        // Add search query filter (by name or breed)
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR breed LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add type filter
+        if ($type && in_array($type, ['dogs', 'cats'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        // Add gender filter
+        if ($gender && in_array($gender, ['male', 'female'])) {
+            $sql .= " AND gender = ?";
+            $params[] = $gender;
+        }
+
+        // Add breed filter
+        if ($breed) {
+            $sql .= " AND breed LIKE ?";
+            $params[] = "%" . $breed . "%";
+        }
+
+        // Add age range filter
+        if ($minAge !== null && $minAge !== '') {
+            $sql .= " AND age >= ?";
+            $params[] = $minAge;
+        }
+        if ($maxAge !== null && $maxAge !== '') {
+            $sql .= " AND age <= ?";
+            $params[] = $maxAge;
+        }
+
+        $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Get the total count of all pets with search and optional filters for admin view
+    public function getAdminTotalCount($query = null, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null) {
+        $sql = "SELECT COUNT(*) FROM pets WHERE 1"; // Start with WHERE 1
+        $params = [];
+
+        // Add search query filter (by name or breed)
+        if ($query) {
+            $sql .= " AND (name LIKE ? OR breed LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+        }
+
+        // Add type filter
+        if ($type && in_array($type, ['dogs', 'cats'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        // Add gender filter
+        if ($gender && in_array($gender, ['male', 'female'])) {
+            $sql .= " AND gender = ?";
+            $params[] = $gender;
+        }
+
+        // Add breed filter
+        if ($breed) {
+            $sql .= " AND breed LIKE ?";
+            $params[] = "%" . $breed . "%";
+        }
+
+        // Add age range filter
+        if ($minAge !== null && $minAge !== '') {
+            $sql .= " AND age >= ?";
+            $params[] = $minAge;
+        }
+        if ($maxAge !== null && $maxAge !== '') {
+            $sql .= " AND age <= ?";
+            $params[] = $maxAge;
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
+    }
+
+    public function getAllPets() {
+        $sql = "SELECT * FROM pets ORDER BY id DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get pets with pagination, search, and optional filters for user view
+    public function getPetsWithFiltersAndPagination($query = null, $species = null, $limit, $offset)
+    {
+        // Reuse the existing getPaginated method, passing only relevant filters
+        return $this->getPaginated($limit, $offset, $species, null, null, null, null, $query);
+    }
+
+    // Get the total count of pets with search and optional filters for user view
+    public function getTotalPetsWithFilters($query = null, $species = null)
+    {
+        // Reuse the existing getTotalCount method, passing only relevant filters
+        return $this->getTotalCount($species, null, null, null, null, $query);
+    }
 }

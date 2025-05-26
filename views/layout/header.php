@@ -13,6 +13,23 @@
             --secondary-color: <?php echo getSetting('secondary_color', '#FFD700'); ?>;
         }
 
+        .logo-img {
+            height: 50px;
+            width: auto;
+            max-width: 200px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+
+        .logo-img:hover {
+            transform: scale(1.05);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+        }
+
         .navbar-brand img {
             height: 50px;
         }
@@ -68,11 +85,22 @@
     </style>
 </head>
 
-<body>
+<body
+    <?php if (isset($_SESSION['success'])): ?>
+        data-session-success="<?php echo htmlspecialchars($_SESSION['success']); ?>"
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error'])): ?>
+        data-session-error="<?php echo htmlspecialchars($_SESSION['error']); ?>"
+    <?php endif; ?>
+>
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand" href="<?php echo BASE_URL; ?>">
-                <img src="<?php echo getSetting('site_logo', 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Pawfect%20Pet%20Shop%20Logo.jpg-6fGiYU6pBXv98KAwkeHcJlMTwozOXO.jpeg'); ?>" alt="Pawfect Pet Shop">
+                <?php if (getSetting('site_logo')): ?>
+                    <img src="<?php echo getSetting('site_logo'); ?>" alt="Pawfect Pet Shop" class="logo-img">
+                <?php else: ?>
+                    <img src="<?php echo BASE_URL; ?>/public/Pawfect%20Pet%20Shop%20Logo.jpg" alt="Pawfect Pet Shop" class="logo-img">
+                <?php endif; ?>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -144,19 +172,3 @@
             </div>
         </div>
     </nav>
-
-    <?php if (isset($_SESSION['success'])): ?>
-        <div class="alert alert-success alert-dismissible fade show m-0" role="alert">
-            <?php echo $_SESSION['success'];
-            unset($_SESSION['success']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show m-0" role="alert">
-            <?php echo $_SESSION['error'];
-            unset($_SESSION['error']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>

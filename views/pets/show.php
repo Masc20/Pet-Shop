@@ -3,7 +3,7 @@
 <div class="container py-5">
     <div class="row">
         <div class="col-md-6">
-            <img src="<?php echo $pet['pet_image']; ?>" class="img-fluid rounded shadow" alt="<?php echo $pet['name']; ?>">
+            <img src="<?php echo BASE_URL . $pet['pet_image']; ?>" class="img-fluid rounded shadow" alt="<?php echo $pet['name']; ?>">
         </div>
         <div class="col-md-6">
             <h1 class="fw-bold"><?php echo $pet['name']; ?></h1>
@@ -30,7 +30,7 @@
             <?php else: ?>
                 <div class="d-grid gap-2">
                     <?php if (isLoggedIn()): ?>
-                        <button onclick="adoptPet(<?php echo $pet['id']; ?>)" class="btn btn-warning btn-lg">
+                        <button onclick="adoptPet(<?php echo $pet['id']; ?>, '<?php echo $pet['name']; ?>')" class="btn btn-warning btn-lg">
                             <i class="fas fa-home"></i> Adopt <?php echo $pet['name']; ?>
                         </button>
                     <?php else: ?>

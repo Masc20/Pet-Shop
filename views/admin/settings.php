@@ -38,12 +38,17 @@
                     <h5 class="mb-0">Customize Website</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <div class="mb-3">
-                            <label for="site_logo" class="form-label">Site Logo URL</label>
-                            <input type="url" class="form-control" id="site_logo" name="site_logo" 
-                                   value="<?php echo getSetting('site_logo'); ?>" required>
-                            <div class="form-text">Enter the URL of your logo image</div>
+                            <label for="site_logo" class="form-label">Site Logo</label>
+                            <input type="file" class="form-control" id="site_logo" name="site_logo" accept="image/*">
+                            <div class="form-text">Upload your logo image (recommended size: 200x50px)</div>
+                            <?php if (getSetting('site_logo')): ?>
+                                <div class="mt-2">
+                                    <small>Current logo:</small><br>
+                                    <img src="<?php echo getSetting('site_logo'); ?>" alt="Current Logo" style="max-height: 50px;" class="mt-1">
+                                </div>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="row">
@@ -72,8 +77,22 @@
                     <h5 class="mb-0">Preview</h5>
                 </div>
                 <div class="card-body">
+                    <div class="border rounded p-3 mb-4">
+                        <h6 class="mb-3">Navbar Preview</h6>
+                        <nav class="navbar navbar-light bg-white">
+                            <div class="container-fluid">
+                                <a class="navbar-brand" href="#">
+                                    <?php if (getSetting('site_logo')): ?>
+                                        <img src="<?php echo getSetting('site_logo'); ?>" alt="Logo Preview" class="logo-img">
+                                    <?php else: ?>
+                                        <div class="text-muted">No logo uploaded</div>
+                                    <?php endif; ?>
+                                </a>
+                            </div>
+                        </nav>
+                    </div>
+                    
                     <div class="text-center">
-                        <img src="<?php echo getSetting('site_logo'); ?>" alt="Logo Preview" style="max-height: 100px;" class="mb-3">
                         <div class="d-inline-block p-3 rounded" style="background: linear-gradient(135deg, <?php echo getSetting('primary_color'); ?>, <?php echo getSetting('secondary_color'); ?>);">
                             <span class="text-white fw-bold">Color Preview</span>
                         </div>

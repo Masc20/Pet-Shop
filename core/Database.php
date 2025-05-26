@@ -94,7 +94,8 @@ function db_update($table, $data, $where, $whereParams = []) {
         
         return $stmt->execute($params);
     } catch (PDOException $e) {
-        error_log("Database update error: " . $e->getMessage());
+        // Log the SQL query, parameters, and the specific PDO error message
+        error_log("Database update error for table {$table}: " . $e->getMessage() . " SQL: " . $sql . " Params: " . json_encode($params));
         return false;
     }
 }
