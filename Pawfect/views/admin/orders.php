@@ -206,4 +206,23 @@
     </div>
 </div>
 
+<style>
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: none;
+    color: #FF8C00;
+}
+
+.pagination .page-link:hover {
+    background: #FF8C00;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background: #FF8C00;
+    border-color: #FF8C00;
+}
+</style>
+
 <?php require_once 'views/layout/footer.php'; ?>

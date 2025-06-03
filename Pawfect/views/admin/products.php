@@ -142,6 +142,10 @@ $filter_params = http_build_query(array_filter([
                                                         onclick="editProduct(<?php echo htmlspecialchars(json_encode($product)); ?>)">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="confirmDelete(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name']); ?>')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                                 <?php if ($product['is_archived']): ?>
                                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to restore this product?');">
                                                         <input type="hidden" name="action" value="restore">
@@ -199,6 +203,25 @@ $filter_params = http_build_query(array_filter([
         </div>
     </div>
 </div>
+
+<style>
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: none;
+    color: #FF8C00;
+}
+
+.pagination .page-link:hover {
+    background: #FF8C00;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background: #FF8C00;
+    border-color: #FF8C00;
+}
+</style>
 
 <!-- Add Product Modal -->
 <div class="modal fade" id="addProductModal" tabindex="-1">
@@ -334,6 +357,29 @@ $filter_params = http_build_query(array_filter([
   </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete <span id="deleteProductName"></span>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteProductForm">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" id="deleteProductId">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function editProduct(product) {
     document.getElementById('editProductId').value = product.id;
@@ -348,16 +394,23 @@ function editProduct(product) {
     editModal.show();
 }
 
+function confirmDelete(productId, productName) {
+    document.getElementById('deleteProductId').value = productId;
+    document.getElementById('deleteProductName').textContent = productName;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    deleteModal.show();
+}
+
 // Confirmation modal logic
 function showConfirmModal(message, onConfirm) {
-  document.getElementById('confirmModalBody').textContent = message;
-  const yesBtn = document.getElementById('confirmModalYes');
-  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-  yesBtn.onclick = function() {
-    modal.hide();
-    if (typeof onConfirm === 'function') onConfirm();
-  };
-  modal.show();
+    document.getElementById('confirmModalBody').textContent = message;
+    const yesBtn = document.getElementById('confirmModalYes');
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    yesBtn.onclick = function() {
+        modal.hide();
+        if (typeof onConfirm === 'function') onConfirm();
+    };
+    modal.show();
 }
 
 // Attach confirmation modals to archive/restore forms

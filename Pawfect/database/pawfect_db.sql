@@ -1,5 +1,5 @@
 -- Pawfect Pet Shop Database Schema
--- No date fields as requested
+-- Just copy and paste this to your database
 
 CREATE DATABASE IF NOT EXISTS pawfect_db;
 USE pawfect_db;
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS pets (
     gender ENUM('male', 'female') NOT NULL,
     age INT NOT NULL,
     breed VARCHAR(100),
+    description TEXT,
     adopted_by_user_id INT NULL,
     FOREIGN KEY (adopted_by_user_id) REFERENCES users(id)
 );
@@ -90,17 +91,6 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
--- Shipments table
-CREATE TABLE IF NOT EXISTS shipments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT NOT NULL,
-    shipped_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    tracking_number VARCHAR(100),
-    carrier VARCHAR(100),
-    status VARCHAR(50) DEFAULT 'shipped',
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
-
 -- Settings table for admin customization
 CREATE TABLE IF NOT EXISTS settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -109,8 +99,8 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 -- Insert default admin user password 123123123
-INSERT INTO users (first_name, last_name, email, password, role) 
-VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScyb8yeW1olywqOlMyi.KnCa/6cmEW', 'admin');
+INSERT INTO users (first_name, last_name, email, password, avatar,role) 
+VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScyb8yeW1olywqOlMyi.KnCa/6cmEW', '/uploads/avatars/683f471b0d860_PawfectPetShopLogo.jpg', 'admin');
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES 
@@ -119,11 +109,11 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('secondary_color', '#FFD700');
 
 -- Sample pets data
-INSERT INTO pets (name, pet_image, type, gender, age, breed) VALUES
-('Buddy', '/placeholder.svg?height=300&width=300', 'dogs', 'male', 2, 'Golden Retriever'),
-('Luna', '/placeholder.svg?height=300&width=300', 'cats', 'female', 1, 'Persian'),
-('Max', '/placeholder.svg?height=300&width=300', 'dogs', 'male', 3, 'German Shepherd'),
-('Bella', '/placeholder.svg?height=300&width=300', 'cats', 'female', 2, 'Siamese');
+INSERT INTO pets (name, pet_image, type, gender, age, breed, description) VALUES
+('Buddy', '/placeholder.svg?height=300&width=300', 'dogs', 'male', 2, 'Golden Retriever', 'Buddy is a friendly and energetic Golden Retriever who loves playing fetch and swimming. He has a gentle temperament and gets along well with children and other pets. Buddy is house-trained and knows basic commands. He would make a perfect family companion!'),
+('Luna', '/placeholder.svg?height=300&width=300', 'cats', 'female', 1, 'Persian', 'Luna is a beautiful Persian cat with a calm and affectionate personality. She enjoys lounging in sunny spots and being groomed.'),
+('Max', '/placeholder.svg?height=300&width=300', 'dogs', 'male', 3, 'German Shepherd', 'Max is a loyal and intelligent German Shepherd with excellent protective instincts. He is well-trained and responds well to commands. Max has a strong work ethic and would excel in activities like obedience training or agility courses. He needs an active family who can provide plenty of exercise and mental stimulation.'),
+('Bella', '/placeholder.svg?height=300&width=300', 'cats', 'female', 2, 'Siamese', 'Bella is a vocal and social Siamese cat who loves attention and playtime.');
 
 -- Sample products data
 INSERT INTO products (name, product_image, stock_quantity, type, price, description) VALUES
@@ -131,22 +121,3 @@ INSERT INTO products (name, product_image, stock_quantity, type, price, descript
 ('Cat Toy Set', '/placeholder.svg?height=200&width=200', 25, 'accessories', 15.99, 'Interactive toys for cats'),
 ('Dog Leash', '/placeholder.svg?height=200&width=200', 30, 'accessories', 12.99, 'Durable and comfortable leash'),
 ('Cat Food Premium', '/placeholder.svg?height=200&width=200', 40, 'foods', 24.99, 'Nutritious food for cats');
-
--- Create uploads directory structure in database (for tracking)
-CREATE TABLE IF NOT EXISTS uploads (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `filename` varchar(255) NOT NULL,
-  `original_name` varchar(255) NOT NULL,
-  `file_path` varchar(500) NOT NULL,
-  `file_size` int(11) NOT NULL,
-  `mime_type` varchar(100) NOT NULL,
-  `uploaded_by` int(11) DEFAULT NULL,
-  `entity_type` varchar(50) DEFAULT NULL,
-  `entity_id` int(11) DEFAULT NULL,
-  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_uploaded_by` (`uploaded_by`),
-  KEY `idx_entity` (`entity_type`, `entity_id`),
-  FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

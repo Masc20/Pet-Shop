@@ -13,20 +13,20 @@ class ProductController extends Controller {
         $productModel = new Product();
         
         // Server-side pagination and filtering
-        $limit = 12; // Number of products per page
+        $limit = 9; // Number of products per page
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $offset = ($page - 1) * $limit;
         
         // Get filter parameters from GET request
-        $query = isset($_GET['query']) ? $_GET['query'] : null;
-        $type = isset($_GET['type']) ? $_GET['type'] : null;
-        $minPrice = isset($_GET['minPrice']) ? (float)$_GET['minPrice'] : null;
-        $maxPrice = isset($_GET['maxPrice']) ? (float)$_GET['maxPrice'] : null;
-        // Stock status filter will be handled in the view/model if needed, but not as a direct query parameter initially.
+        $query = isset($_GET['query']) ? trim($_GET['query']) : null;
+        $type = isset($_GET['type']) ? trim($_GET['type']) : null;
+        $minPrice = isset($_GET['minPrice']) && $_GET['minPrice'] !== '' ? (float)$_GET['minPrice'] : null;
+        $maxPrice = isset($_GET['maxPrice']) && $_GET['maxPrice'] !== '' ? (float)$_GET['maxPrice'] : null;
+        $stockStatus = isset($_GET['stockStatus']) ? trim($_GET['stockStatus']) : null;
         
         // Fetch paginated and filtered products
-        $products = $productModel->getPaginated($limit, $offset, $type, $minPrice, $maxPrice, $query);
-        $totalProducts = $productModel->getTotalCount($type, $minPrice, $maxPrice, $query);
+        $products = $productModel->getPaginated($limit, $offset, $type, $minPrice, $maxPrice, $query, $stockStatus);
+        $totalProducts = $productModel->getTotalCount($type, $minPrice, $maxPrice, $query, $stockStatus);
         
         // Calculate total pages
         $totalPages = ceil($totalProducts / $limit);
@@ -40,7 +40,8 @@ class ProductController extends Controller {
             'filterQuery' => $query,
             'filterType' => $type,
             'filterMinPrice' => $minPrice,
-            'filterMaxPrice' => $maxPrice
+            'filterMaxPrice' => $maxPrice,
+            'filterStockStatus' => $stockStatus
         ]);
     }
     

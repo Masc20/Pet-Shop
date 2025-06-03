@@ -77,6 +77,7 @@ function db_insert($table, $data) {
 
 // Update data
 function db_update($table, $data, $where, $whereParams = []) {
+    $params = [];
     try {
         $pdo = get_db_connection();
         

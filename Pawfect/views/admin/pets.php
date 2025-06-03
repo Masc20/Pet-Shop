@@ -63,10 +63,10 @@
                              <div class="col-md">
                                 <input type="text" name="breed" class="form-control" placeholder="Filter by Breed" value="<?php echo htmlspecialchars($_GET['breed'] ?? ''); ?>">
                             </div>
-                            <div class="col-md-auto">
+                            <div class="col-md">
                                 <input type="number" name="min_age" class="form-control" placeholder="Min Age" min="0" value="<?php echo htmlspecialchars($_GET['min_age'] ?? ''); ?>">
                            </div>
-                            <div class="col-md-auto">
+                            <div class="col-md">
                                 <input type="number" name="max_age" class="form-control" placeholder="Max Age" min="0" value="<?php echo htmlspecialchars($_GET['max_age'] ?? ''); ?>">
                            </div>
                             <div class="col-md-auto">
@@ -121,13 +121,9 @@
                                         <button class="btn btn-sm btn-outline-primary" onclick="editPet(<?php echo htmlspecialchars(json_encode($pet)); ?>)">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure?')">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?php echo $pet['id']; ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete(<?php echo htmlspecialchars(json_encode($pet)); ?>)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -153,6 +149,29 @@
             </nav>
             <?php endif; ?>
 
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deletePetModal" tabindex="-1" aria-labelledby="deletePetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePetModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete <strong id="deletePetName"></strong>? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" id="deletePetId">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -206,6 +225,11 @@
                             <input type="text" class="form-control" name="breed" required>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Enter pet's description, personality, and any special needs..."></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -224,7 +248,7 @@
                 <h5 class="modal-title">Edit Pet</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" enctype="multipart/form-data" id="editPetForm">
+            <form method="POST" enctype="multipart/form-data" action="<?php echo BASE_URL; ?>/admin/pets">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="id" id="edit_pet_id">
@@ -238,6 +262,7 @@
                     <div class="mb-3">
                         <label class="form-label">Pet Image</label>
                         <input type="file" class="form-control" name="pet_image" id="edit_pet_image" accept="image/*">
+                        <small class="text-muted">Leave empty to keep current image</small>
                     </div>
                     
                     <div class="row">
@@ -267,6 +292,11 @@
                             <input type="text" class="form-control" name="breed" id="edit_breed" required>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="3" placeholder="Enter pet's description, personality, and any special needs..."></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -279,17 +309,49 @@
 
 <script>
 function editPet(pet) {
+    // Set form values
     document.getElementById('edit_pet_id').value = pet.id;
     document.getElementById('edit_name').value = pet.name;
-    document.getElementById('edit_pet_image').value = pet.pet_image;
     document.getElementById('edit_type').value = pet.type;
     document.getElementById('edit_gender').value = pet.gender;
     document.getElementById('edit_age').value = pet.age;
     document.getElementById('edit_breed').value = pet.breed;
+    document.getElementById('edit_description').value = pet.description;
     document.getElementById('edit_current_pet_image').value = pet.pet_image;
     
-    new bootstrap.Modal(document.getElementById('editPetModal')).show();
+    // Show the modal
+    const editModal = new bootstrap.Modal(document.getElementById('editPetModal'));
+    editModal.show();
+}
+
+function confirmDelete(pet) {
+    // Set the pet details in the modal
+    document.getElementById('deletePetName').textContent = pet.name;
+    document.getElementById('deletePetId').value = pet.id;
+    
+    // Show the modal
+    const deleteModal = new bootstrap.Modal(document.getElementById('deletePetModal'));
+    deleteModal.show();
 }
 </script>
+
+<style>
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: none;
+    color: #FF8C00;
+}
+
+.pagination .page-link:hover {
+    background: #FF8C00;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background: #FF8C00;
+    border-color: #FF8C00;
+}
+</style>
 
 <?php require_once 'views/layout/footer.php'; ?>

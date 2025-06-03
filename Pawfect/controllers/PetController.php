@@ -6,30 +6,40 @@ class PetController extends Controller {
     public function index() {
         $petModel = new Pet();
         
-        // Get current page from URL, default to 1
-        $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        // Get filter parameters from URL
-        $filterQuery = $_GET['query'] ?? '';
-        $filterType = $_GET['type'] ?? '';
+        // Server-side pagination and filtering
+        $limit = 9; // Number of pets per page
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $offset = ($page - 1) * $limit;
         
-        $petsPerPage = 12; // Number of pets per page
-        $offset = ($currentPage - 1) * $petsPerPage;
+        // Get filter parameters from GET request
+        $query = isset($_GET['query']) ? trim($_GET['query']) : null;
+        $type = isset($_GET['type']) ? trim($_GET['type']) : null;
+        $gender = isset($_GET['gender']) ? trim($_GET['gender']) : null;
+        $minAge = isset($_GET['minAge']) && $_GET['minAge'] !== '' ? (int)$_GET['minAge'] : null;
+        $maxAge = isset($_GET['maxAge']) && $_GET['maxAge'] !== '' ? (int)$_GET['maxAge'] : null;
         
-        // Get filtered and paginated pets
-        $pets = $petModel->getPetsWithFiltersAndPagination($filterQuery, $filterType, $petsPerPage, $offset);
-        // Get total count of pets matching filters
-        $totalPets = $petModel->getTotalPetsWithFilters($filterQuery, $filterType);
+        error_log("PetController index - Parameters: query=$query, type=$type, gender=$gender, minAge=$minAge, maxAge=$maxAge");
+        
+        // Fetch paginated and filtered pets
+        $pets = $petModel->getPaginated($limit, $offset, $type, $gender, null, $minAge, $maxAge, $query);
+        $totalPets = $petModel->getTotalCount($type, $gender, null, $minAge, $maxAge, $query);
+        
+        error_log("PetController index - Total pets: $totalPets");
         
         // Calculate total pages
-        $totalPages = ceil($totalPets / $petsPerPage);
+        $totalPages = ceil($totalPets / $limit);
         
         // Pass data to the view
         $this->view('pets/index', [
             'pets' => $pets,
-            'currentPage' => $currentPage,
             'totalPages' => $totalPages,
-            'filterQuery' => $filterQuery,
-            'filterType' => $filterType
+            'currentPage' => $page,
+            'limit' => $limit,
+            'filterQuery' => $query,
+            'filterType' => $type,
+            'filterGender' => $gender,
+            'filterMinAge' => $minAge,
+            'filterMaxAge' => $maxAge
         ]);
     }
     

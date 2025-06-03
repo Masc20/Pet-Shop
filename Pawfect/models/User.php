@@ -7,7 +7,8 @@
 class User extends Model {
     protected $table = 'users';
     protected $fillable = [
-        'first_name', 'last_name', 'email', 'phone', 'address',
+        'first_name', 'last_name', 'email', 'phone',
+        'delivery_addresses', 'password',
         'city', 'barangay', 'zip_code', 'date_of_birth', 'avatar',
         'email_verified_at', 'status', 'role'
     ];
@@ -21,8 +22,8 @@ class User extends Model {
     
     public function create($data) {
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-        $stmt = $this->pdo->prepare("INSERT INTO users (first_name, last_name, email, password, phone, address) VALUES (?, ?, ?, ?, ?, ?)");
-        return $stmt->execute([$data['first_name'], $data['last_name'], $data['email'], $hashedPassword, $data['phone'], $data['address']]);
+        $stmt = $this->pdo->prepare("INSERT INTO users (first_name, last_name, email, password, phone, avatar) VALUES (?, ?, ?, ?, ?, ?)");
+        return $stmt->execute([$data['first_name'], $data['last_name'], $data['email'], $hashedPassword, $data['phone'], null]);
     }
     
     public function getByEmail($email) {
@@ -43,8 +44,8 @@ class User extends Model {
     }
     
     public function update($id, $data) {
-        $stmt = $this->pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, avatar = ? WHERE id = ?");
-        return $stmt->execute([$data['first_name'], $data['last_name'], $data['email'], $data['phone'], $data['address'], $data['avatar'] ?? null, $id]);
+        $stmt = $this->pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?,  avatar = ? WHERE id = ?");
+        return $stmt->execute([$data['first_name'], $data['last_name'], $data['email'], $data['phone'],  $data['avatar'] ?? null, $id]);
     }
     
     public function updateRole($id, $role) {

@@ -27,8 +27,12 @@
             </div>
             
             <div class="mb-4">
-                <h5>Description</h5>
-                <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
+                <h5><i class="fas fa-info-circle text-primary"></i> Description</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="text-muted" style="white-space: pre-line; line-height: 1.6;"><?php echo htmlspecialchars($product['description']); ?></p>
+                    </div>
+                </div>
             </div>
             
             <div class="d-grid gap-2">

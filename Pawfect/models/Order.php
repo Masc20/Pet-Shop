@@ -4,6 +4,8 @@
  * Handles order data and operations
  */
 
+require_once 'models/Product.php';
+
 class Order extends Model {
     protected $table = 'orders';
     protected $fillable = [
@@ -170,8 +172,61 @@ class Order extends Model {
         return $order;
     }
     
-    public function getUserOrders($userId, $page = 1, $perPage = 10) {
-        return $this->paginate($page, $perPage, ['user_id' => $userId], 'created_at DESC');
+    public function getUserOrders($userId, $limit = 5, $offset = 0, $statuses = null) {
+        $sql = "
+            SELECT o.*, u.first_name, u.last_name, u.email, da.city, da.barangay, da.street, da.zipcode 
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id
+            WHERE o.user_id = ?
+        ";
+        
+        $params = [$userId];
+        
+        if ($statuses) {
+            $placeholders = str_repeat('?,', count($statuses) - 1) . '?';
+            $sql .= " AND o.status IN ($placeholders)";
+            $params = array_merge($params, $statuses);
+        }
+        
+        $sql .= " ORDER BY o.order_date DESC LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+        
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Add items to each order
+        foreach ($orders as &$order) {
+            $order['items'] = $this->getItems($order['id']);
+            $order['delivery_address'] = [
+                'city' => $order['city'],
+                'barangay' => $order['barangay'],
+                'street' => $order['street'],
+                'zipcode' => $order['zipcode']
+            ];
+        }
+        
+        return $orders;
+    }
+    
+    public function getUserOrdersCount($userId, $statuses = null) {
+        $sql = "SELECT COUNT(*) FROM orders WHERE user_id = ?";
+        $params = [$userId];
+        
+        if ($statuses) {
+            $placeholders = str_repeat('?,', count($statuses) - 1) . '?';
+            $sql .= " AND status IN ($placeholders)";
+            $params = array_merge($params, $statuses);
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
     }
     
     public function updateStatus($orderId, $status, $notes = null) {
@@ -331,19 +386,7 @@ class Order extends Model {
             return false;
         }
         
-        $updateData = [
-            'status' => 'cancelled',
-            'cancelled_at' => now(),
-            'cancellation_reason' => $reason
-        ];
-        
-        $result = $this->update($orderId, $updateData);
-        
-        if ($result) {
-            $this->restoreStock($orderId);
-        }
-        
-        return $result;
+        return $this->updateStatus($orderId, 'cancelled');
     }
 
     // Get all orders with pagination for admin view

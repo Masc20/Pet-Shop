@@ -12,8 +12,49 @@ class UserController extends Controller {
         $userModel = new User();
         $orderModel = new Order();
         
+        // Handle cancel order action
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel_order') {
+            $orderId = $_POST['order_id'] ?? null;
+
+            if (!$orderId) {
+                $_SESSION['error'] = 'Invalid cancellation request';
+            } else {
+                // Check if the order belongs to the user and can be cancelled
+                if (!$orderModel->canBeCancelled($orderId, $_SESSION['user_id'])) {
+                    $_SESSION['error'] = 'This order cannot be cancelled';
+                } else {
+                    // Attempt to cancel the order
+                    if ($orderModel->cancelOrder($orderId, $_SESSION['user_id'])) {
+                        $_SESSION['success'] = 'Order cancelled successfully';
+                    } else {
+                        $_SESSION['error'] = 'Failed to cancel order';
+                    }
+                }
+            }
+            $this->redirect('/profile');
+            return;
+        }
+        
         $user = $userModel->getById($_SESSION['user_id']);
-        $orders = $orderModel->getByUser($_SESSION['user_id']);
+        
+        // Pagination settings for active orders
+        $limit = 5; // Number of orders per page
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $offset = ($page - 1) * $limit;
+        
+        // Get paginated active orders for the user
+        $orders = $orderModel->getUserOrders($_SESSION['user_id'], $limit, $offset, ['pending', 'processing', 'shipped', 'delivered']);
+        $totalOrders = $orderModel->getUserOrdersCount($_SESSION['user_id'], ['pending', 'processing', 'shipped', 'delivered']);
+        $totalPages = ceil($totalOrders / $limit);
+        
+        // Pagination settings for cancelled orders
+        $cancelledPage = isset($_GET['cancelled_page']) ? (int)$_GET['cancelled_page'] : 1;
+        $cancelledOffset = ($cancelledPage - 1) * $limit;
+        
+        // Get paginated cancelled orders for the user
+        $cancelledOrders = $orderModel->getUserOrders($_SESSION['user_id'], $limit, $cancelledOffset, ['cancelled']);
+        $totalCancelledOrders = $orderModel->getUserOrdersCount($_SESSION['user_id'], ['cancelled']);
+        $cancelledTotalPages = ceil($totalCancelledOrders / $limit);
         
         // Fetch user's delivery addresses
         global $pdo;
@@ -53,7 +94,12 @@ class UserController extends Controller {
         $this->view('user/profile', [
             'user' => $user,
             'orders' => $orders,
-            'delivery_address' => $deliveryAddress
+            'cancelledOrders' => $cancelledOrders,
+            'delivery_address' => $deliveryAddress,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'cancelledCurrentPage' => $cancelledPage,
+            'cancelledTotalPages' => $cancelledTotalPages
         ]);
     }
 

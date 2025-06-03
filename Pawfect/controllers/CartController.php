@@ -92,12 +92,32 @@ class CartController extends Controller {
 
         $cartModel = new Cart();
         $items = $cartModel->getItems($_SESSION['user_id']);
-        $total = $cartModel->getTotal($_SESSION['user_id']);
 
-        if (empty($items)) {
+        // Filter items based on selection if provided
+        if (isset($_POST['selected_items']) && is_array($_POST['selected_items'])) {
+            $selectedIds = array_map('intval', $_POST['selected_items']);
+            $items = array_filter($items, function($item) use ($selectedIds) {
+                return in_array($item['product_id'], $selectedIds);
+            });
+            // Store selected items in session
+            $_SESSION['checkout_items'] = $selectedIds;
+        } else {
+            // If no items selected, redirect back to cart
+            $_SESSION['error'] = 'Please select items to checkout';
             $this->redirect('/cart');
             return;
         }
+
+        if (empty($items)) {
+            $_SESSION['error'] = 'Please select items to checkout';
+            $this->redirect('/cart');
+            return;
+        }
+
+        // Calculate total for selected items
+        $total = array_reduce($items, function($sum, $item) {
+            return $sum + ($item['price'] * $item['quantity']);
+        }, 0);
 
         // Show confirmation page for address/payment
         $userModel = new User();
@@ -110,7 +130,7 @@ class CartController extends Controller {
             'items' => $items,
             'total' => $total,
             'user' => $user,
-            'delivery_address' => $deliveryAddress // Pass delivery address to the view
+            'delivery_address' => $deliveryAddress
         ]);
     }
 
@@ -125,13 +145,31 @@ class CartController extends Controller {
         $productModel = new Product();
         $userModel = new User();
 
+        // Get items from cart
         $items = $cartModel->getItems($_SESSION['user_id']);
-        $total = $cartModel->getTotal($_SESSION['user_id']);
 
-        if (empty($items)) {
+        // Filter items based on session stored selection
+        if (isset($_SESSION['checkout_items']) && is_array($_SESSION['checkout_items'])) {
+            $selectedIds = $_SESSION['checkout_items'];
+            $items = array_filter($items, function($item) use ($selectedIds) {
+                return in_array($item['product_id'], $selectedIds);
+            });
+        } else {
+            $_SESSION['error'] = 'No items selected for checkout';
             $this->redirect('/cart');
             return;
         }
+
+        if (empty($items)) {
+            $_SESSION['error'] = 'Please select items to checkout';
+            $this->redirect('/cart');
+            return;
+        }
+
+        // Calculate total for selected items
+        $total = array_reduce($items, function($sum, $item) {
+            return $sum + ($item['price'] * $item['quantity']);
+        }, 0);
 
         // Get address details from POST
         $city = $_POST['city'] ?? '';
@@ -151,7 +189,7 @@ class CartController extends Controller {
         $deliveryAddressId = $userModel->findOrCreateDeliveryAddress($_SESSION['user_id'], $city, $barangay, $street, $zipcode);
 
         if (!$deliveryAddressId) {
-             $_SESSION['error'] = 'Failed to save delivery address.';
+            $_SESSION['error'] = 'Failed to save delivery address.';
             $this->redirect('/cart/checkout');
             return;
         }
@@ -161,12 +199,16 @@ class CartController extends Controller {
 
         if ($orderId) {
             foreach ($items as $item) {
-                // Assuming addItem in Order model takes price as well
+                // Add selected items to order
                 $orderModel->addItem($orderId, $item['product_id'], $item['quantity'], $item['price']);
                 $productModel->updateStock($item['product_id'], $item['quantity']);
+                // Remove selected items from cart
+                $cartModel->removeItem($_SESSION['user_id'], $item['product_id']);
             }
 
-            $cartModel->clearCart($_SESSION['user_id']);
+            // Clear the checkout items from session
+            unset($_SESSION['checkout_items']);
+
             $_SESSION['success'] = 'Order placed successfully!';
             $this->redirect('/profile'); // Redirect to profile or order details page
         } else {

@@ -6,8 +6,7 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 
 /*
- * If you need to specify a port, add it to the host, e.g. 'localhost:3333'
- * Example: define('DB_HOST', 'localhost:3333');
+ * Change the Host to your database host for Default XAMPP is localhost:3306
  */
 
 try {

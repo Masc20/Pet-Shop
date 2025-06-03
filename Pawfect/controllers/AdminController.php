@@ -44,14 +44,16 @@ class AdminController extends Controller {
         $type = $_GET['type'] ?? null;
         $gender = $_GET['gender'] ?? null;
         $breed = $_GET['breed'] ?? null;
-        $minAge = $_GET['min_age'] ?? null;
-        $maxAge = $_GET['max_age'] ?? null;
+        $minAge = isset($_GET['min_age']) && $_GET['min_age'] !== '' ? (int)$_GET['min_age'] : null;
+        $maxAge = isset($_GET['max_age']) && $_GET['max_age'] !== '' ? (int)$_GET['max_age'] : null;
+
+        error_log("AdminController pets - Parameters: query=$query, type=$type, gender=$gender, breed=$breed, minAge=$minAge, maxAge=$maxAge");
 
         // Get paginated pets and total count based on search and filters
-        // This assumes getAdminPaginated and getAdminTotalCount in Pet.php
-        // are updated to handle search query and these filters.
-        $pets = $petModel->getAdminPaginated($limit, $offset, $query, $type, $gender, $breed, $minAge, $maxAge); // Add new parameters
-        $totalPets = $petModel->getAdminTotalCount($query, $type, $gender, $breed, $minAge, $maxAge); // Add new parameters
+        $pets = $petModel->getAdminPaginated($limit, $offset, $query, $type, $gender, $breed, $minAge, $maxAge);
+        $totalPets = $petModel->getAdminTotalCount($query, $type, $gender, $breed, $minAge, $maxAge);
+
+        error_log("AdminController pets - Total pets: $totalPets");
 
         $totalPages = ceil($totalPets / $limit);
         
@@ -75,11 +77,12 @@ class AdminController extends Controller {
                     'type' => $_POST['type'],
                     'gender' => $_POST['gender'],
                     'age' => $_POST['age'],
-                    'breed' => $_POST['breed']
+                    'breed' => $_POST['breed'],
+                    'description' => $_POST['description']
                 ];
                 $petModel->create($data);
             } elseif ($action === 'update') {
-                $imagePath = null;
+                $imagePath = $_POST['current_pet_image'];
                 if (isset($_FILES['pet_image']) && $_FILES['pet_image']['error'] === UPLOAD_ERR_OK) {
                     $uploadDir = __DIR__ . '/../uploads/pets/';
                     if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
@@ -87,15 +90,23 @@ class AdminController extends Controller {
                     $targetFile = $uploadDir . $filename;
                     if (move_uploaded_file($_FILES['pet_image']['tmp_name'], $targetFile)) {
                         $imagePath = '/uploads/pets/' . $filename;
+                        // Delete old image if it exists and is not the default image
+                        if ($_POST['current_pet_image'] && $_POST['current_pet_image'] !== '/uploads/pets/default.jpg') {
+                            $oldImagePath = __DIR__ . '/..' . $_POST['current_pet_image'];
+                            if (file_exists($oldImagePath)) {
+                                unlink($oldImagePath);
+                            }
+                        }
                     }
                 }
                 $data = [
                     'name' => $_POST['name'],
-                    'pet_image' => $imagePath ? $imagePath : $_POST['current_pet_image'],
+                    'pet_image' => $imagePath,
                     'type' => $_POST['type'],
                     'gender' => $_POST['gender'],
                     'age' => $_POST['age'],
-                    'breed' => $_POST['breed']
+                    'breed' => $_POST['breed'],
+                    'description' => $_POST['description']
                 ];
                 $petModel->update($_POST['id'], $data);
             } elseif ($action === 'delete') {
@@ -110,12 +121,12 @@ class AdminController extends Controller {
             'pets' => $pets,
             'currentPage' => $page,
             'totalPages' => $totalPages,
-            'searchQuery' => $query, // Pass search query to view
-            'filterType' => $type, // Pass type filter to view
-            'filterGender' => $gender, // Pass gender filter to view
-            'filterBreed' => $breed, // Pass breed filter to view
-            'filterMinAge' => $minAge, // Pass min age filter to view
-            'filterMaxAge' => $maxAge // Pass max age filter to view
+            'searchQuery' => $query,
+            'filterType' => $type,
+            'filterGender' => $gender,
+            'filterBreed' => $breed,
+            'filterMinAge' => $minAge,
+            'filterMaxAge' => $maxAge
         ]);
     }
     
@@ -163,9 +174,32 @@ class AdminController extends Controller {
                 ];
                 $productModel->create($data);
             } elseif ($action === 'update') {
+                $imagePath = $_POST['current_product_image'] ?? null; // Keep existing image by default
+                
+                // Check if a new image was uploaded
+                if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                    $uploadDir = __DIR__ . '/../uploads/products/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0777, true);
+                    }
+                    $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
+                    $targetFile = $uploadDir . $filename;
+                    
+                    if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
+                        $imagePath = '/uploads/products/' . $filename;
+                        
+                        // Delete old image if it exists and is not the default image
+                        if (!empty($_POST['current_product_image']) && 
+                            $_POST['current_product_image'] !== '/assets/images/default-product.png' && 
+                            file_exists(__DIR__ . '/..' . $_POST['current_product_image'])) {
+                            unlink(__DIR__ . '/..' . $_POST['current_product_image']);
+                        }
+                    }
+                }
+                
                 $data = [
                     'name' => $_POST['name'],
-                    'product_image' => $_POST['product_image'],
+                    'product_image' => $imagePath,
                     'stock_quantity' => $_POST['stock_quantity'],
                     'type' => $_POST['type'],
                     'price' => $_POST['price'],

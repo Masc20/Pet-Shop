@@ -23,6 +23,17 @@
                 </div>
             </div>
             
+            <?php if (!empty($pet['description'])): ?>
+            <div class="mb-4">
+                <h6><i class="fas fa-info-circle text-primary"></i> About <?php echo $pet['name']; ?></h6>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="text-muted" style="white-space: pre-line; line-height: 1.6;"><?php echo htmlspecialchars($pet['description']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
             <?php if ($pet['is_adopted']): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-heart"></i> This pet has been adopted and found a loving home!

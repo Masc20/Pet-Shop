@@ -96,12 +96,12 @@ class Product {
     }
 
     // Get products with pagination, search, and optional filters
-    public function getPaginated($limit, $offset, $type = null, $minPrice = null, $maxPrice = null, $query = null) {
+    public function getPaginated($limit, $offset, $type = null, $minPrice = null, $maxPrice = null, $query = null, $stockStatus = null) {
         $sql = "SELECT * FROM products WHERE is_archived = FALSE";
         $params = [];
 
         // Add type filter
-        if ($type && in_array($type, ['food', 'accessory'])) {
+        if ($type && in_array($type, ['foods', 'accessories'])) {
             $sql .= " AND type = ?";
             $params[] = $type;
         }
@@ -114,6 +114,21 @@ class Product {
         if ($maxPrice !== null && $maxPrice !== '') {
             $sql .= " AND price <= ?";
             $params[] = $maxPrice;
+        }
+
+        // Add stock status filter
+        if ($stockStatus) {
+            switch ($stockStatus) {
+                case 'in_stock':
+                    $sql .= " AND stock_quantity > 5";
+                    break;
+                case 'low_stock':
+                    $sql .= " AND stock_quantity > 0 AND stock_quantity <= 5";
+                    break;
+                case 'out_of_stock':
+                    $sql .= " AND stock_quantity = 0";
+                    break;
+            }
         }
 
         // Add search query filter
@@ -131,12 +146,12 @@ class Product {
     }
 
     // Get the total count of products with search and optional filters
-    public function getTotalCount($type = null, $minPrice = null, $maxPrice = null, $query = null) {
+    public function getTotalCount($type = null, $minPrice = null, $maxPrice = null, $query = null, $stockStatus = null) {
         $sql = "SELECT COUNT(*) FROM products WHERE is_archived = FALSE";
         $params = [];
 
         // Add type filter
-        if ($type && in_array($type, ['food', 'accessory'])) {
+        if ($type && in_array($type, ['foods', 'accessories'])) {
             $sql .= " AND type = ?";
             $params[] = $type;
         }
@@ -149,6 +164,21 @@ class Product {
         if ($maxPrice !== null && $maxPrice !== '') {
             $sql .= " AND price <= ?";
             $params[] = $maxPrice;
+        }
+
+        // Add stock status filter
+        if ($stockStatus) {
+            switch ($stockStatus) {
+                case 'in_stock':
+                    $sql .= " AND stock_quantity > 5";
+                    break;
+                case 'low_stock':
+                    $sql .= " AND stock_quantity > 0 AND stock_quantity <= 5";
+                    break;
+                case 'out_of_stock':
+                    $sql .= " AND stock_quantity = 0";
+                    break;
+            }
         }
 
         // Add search query filter

@@ -1,6 +1,5 @@
 <?php
 require_once 'models/Settings.php';
-// require_once 'models/Upload.php';
 /**
  * Settings Helper Functions
  */
@@ -39,57 +38,6 @@ function update_settings($settings)
     } catch (Exception $e) {
         error_log("Settings error: " . $e->getMessage());
         return 0;
-    }
-}
-
-/**
- * Upload Helper Functions
- */
-function upload_file($file, $subfolder = '', $customName = null)
-{
-    try {
-        $upload = new Upload();
-        return $upload->uploadFile($file, $subfolder, $customName);
-    } catch (Exception $e) {
-        error_log("Upload error: " . $e->getMessage());
-        return false;
-    }
-}
-
-function upload_image($file, $subfolder = 'images', $customName = null, $resize = null)
-{
-    try {
-        $upload = new Upload();
-        return $upload->uploadImage($file, $subfolder, $customName, $resize);
-    } catch (Exception $e) {
-        error_log("Upload error: " . $e->getMessage());
-        return false;
-    }
-}
-
-function upload_url($filePath)
-{
-    if (empty($filePath)) {
-        return '/placeholder.svg?height=200&width=200';
-    }
-
-    try {
-        $upload = new Upload();
-        return $upload->getFileUrl($filePath);
-    } catch (Exception $e) {
-        error_log("Upload URL error: " . $e->getMessage());
-        return '/placeholder.svg?height=200&width=200';
-    }
-}
-
-function delete_upload($filePath)
-{
-    try {
-        $upload = new Upload();
-        return $upload->deleteFile($filePath);
-    } catch (Exception $e) {
-        error_log("Delete upload error: " . $e->getMessage());
-        return false;
     }
 }
 

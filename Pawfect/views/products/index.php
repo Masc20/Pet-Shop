@@ -21,15 +21,15 @@ $filter_params = http_build_query(array_filter([
                     <h5 class="mb-0">Filter Products</h5>
                 </div>
                 <div class="card-body" style="background-color: #fff8e1;">
-                    <form id="filterForm" method="GET" action="<?php echo BASE_URL; ?>/products">
+                    <form method="GET" action="<?php echo BASE_URL; ?>/products">
                         <div class="mb-3">
                             <label class="form-label" style="color: #FF8C00;">Search</label>
-                            <input type="text" id="searchInput" name="query" class="form-control" placeholder="Search products..." style="border-color: #FFD700;" value="<?php echo htmlspecialchars($filterQuery ?? ''); ?>">
+                            <input type="text" name="query" class="form-control" placeholder="Search products..." style="border-color: #FFD700;" value="<?php echo htmlspecialchars($filterQuery ?? ''); ?>">
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label" style="color: #FF8C00;">Category</label>
-                            <select id="typeFilter" name="type" class="form-select" style="border-color: #FFD700; color: #333;">
+                            <select name="type" class="form-select" style="border-color: #FFD700; color: #333;">
                                 <option value="">All Categories</option>
                                 <option value="foods" <?php echo ($filterType === 'foods') ? 'selected' : ''; ?>>Pet Foods</option>
                                 <option value="accessories" <?php echo ($filterType === 'accessories') ? 'selected' : ''; ?>>Accessories</option>
@@ -40,17 +40,17 @@ $filter_params = http_build_query(array_filter([
                             <label class="form-label" style="color: #FF8C00;">Price Range</label>
                             <div class="row g-2">
                                 <div class="col">
-                                    <input type="number" id="minPrice" name="minPrice" class="form-control" placeholder="Min Price (₱)" step="0.01" style="border-color: #FFD700;" value="<?php echo htmlspecialchars($filterMinPrice ?? ''); ?>">
+                                    <input type="number" name="minPrice" class="form-control" placeholder="Min Price (₱)" step="0.01" style="border-color: #FFD700;" value="<?php echo htmlspecialchars($filterMinPrice ?? ''); ?>">
                                 </div>
                                 <div class="col">
-                                    <input type="number" id="maxPrice" name="maxPrice" class="form-control" placeholder="Max Price (₱)" step="0.01" style="border-color: #FFD700;" value="<?php echo htmlspecialchars($filterMaxPrice ?? ''); ?>">
+                                    <input type="number" name="maxPrice" class="form-control" placeholder="Max Price (₱)" step="0.01" style="border-color: #FFD700;" value="<?php echo htmlspecialchars($filterMaxPrice ?? ''); ?>">
                                 </div>
                             </div>
                         </div>
                         
-                         <div class="mb-3">
+                        <div class="mb-3">
                             <label class="form-label" style="color: #FF8C00;">Stock Status</label>
-                            <select id="stockFilter" name="stockStatus" class="form-select" style="border-color: #FFD700; color: #333;">
+                            <select name="stockStatus" class="form-select" style="border-color: #FFD700; color: #333;">
                                 <option value="">All</option>
                                 <option value="in_stock">In Stock</option>
                                 <option value="low_stock">Low Stock</option>
@@ -59,7 +59,9 @@ $filter_params = http_build_query(array_filter([
                         </div>
                         
                         <button type="submit" class="btn btn-primary w-100" style="background-color: #FF8C00; border-color: #FF8C00;">Apply Filters</button>
-                        <button type="button" id="resetFilters" class="btn btn-outline-secondary w-100 mt-2" style="background-color: #FFD700; color: #333; border-color: #FFD700;">Reset Filters</button>
+                        <?php if (!empty($filterQuery) || !empty($filterType) || !empty($filterMinPrice) || !empty($filterMaxPrice)): ?>
+                            <a href="<?php echo BASE_URL; ?>/products" class="btn btn-outline-secondary w-100 mt-2" style="background-color: #FFD700; color: #333; border-color: #FFD700;">Reset Filters</a>
+                        <?php endif; ?>
                     </form>
                 </div>
             </div>
@@ -133,13 +135,31 @@ $filter_params = http_build_query(array_filter([
             <!-- Pagination -->
             <nav aria-label="Product pagination" class="mt-4">
                 <ul class="pagination justify-content-center" id="pagination">
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?php echo ($i === $currentPage) ? 'active' : ''; ?>">
-                            <a class="page-link" href="?<?php echo $filter_params; ?>&page=<?php echo $i; ?>">
-                                <?php echo $i; ?>
-                            </a>
+                    <?php if (isset($totalPages) && $totalPages > 1): ?>
+                        <?php
+                        // Generate base URL for pagination links, keeping filters
+                        $pagination_base_url = BASE_URL . '/products?';
+                        $current_filters = [];
+                        if (!empty($filterQuery)) $current_filters['query'] = urlencode($filterQuery);
+                        if (!empty($filterType)) $current_filters['type'] = urlencode($filterType);
+                        if (!empty($filterMinPrice)) $current_filters['minPrice'] = urlencode($filterMinPrice);
+                        if (!empty($filterMaxPrice)) $current_filters['maxPrice'] = urlencode($filterMaxPrice);
+                        $filter_string = http_build_query($current_filters);
+                        ?>
+                        <li class="page-item <?php echo ($currentPage <= 1) ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="<?php echo $pagination_base_url . $filter_string . '&page=' . ($currentPage - 1); ?>">Previous</a>
                         </li>
-                    <?php endfor; ?>
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                            <li class="page-item <?php echo (isset($currentPage) && $i == $currentPage) ? 'active' : ''; ?>">
+                                <a class="page-link" href="<?php echo $pagination_base_url . $filter_string . '&page=' . $i; ?>">
+                                    <?php echo $i; ?>
+                                </a>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?php echo (isset($currentPage) && $currentPage >= $totalPages) ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="<?php echo $pagination_base_url . $filter_string . '&page=' . ($currentPage + 1); ?>">Next</a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </nav>
         </div>
