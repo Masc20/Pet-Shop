@@ -123,13 +123,6 @@
                     </li>
                 </ul>
 
-                <!-- Search Form -->
-                <form class="d-flex me-3" style="position: relative;">
-                    <input class="form-control" type="search" placeholder="Search pets & products..." id="search-input" style="width: 250px;">
-                    <div id="search-results" class="position-absolute bg-white border rounded shadow-sm" style="top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 400px; overflow-y: auto;">
-                    </div>
-                </form>
-
                 <ul class="navbar-nav">
                     <?php if (isLoggedIn()): ?>
                         <li class="nav-item">
