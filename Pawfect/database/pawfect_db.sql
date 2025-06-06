@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS pet_order_items (
 
 -- Insert default admin user password 123123123
 INSERT INTO users (first_name, last_name, email, password, avatar,role) 
-VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScyb8yeW1olywqOlMyi.KnCa/6cmEW', '/uploads/avatars/admin_avatarjpg', 'admin');
+VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScyb8yeW1olywqOlMyi.KnCa/6cmEW', '/uploads/avatars/admin_avatar.jpg', 'admin');
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES 

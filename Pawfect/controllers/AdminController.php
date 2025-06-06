@@ -112,7 +112,8 @@ class AdminController extends Controller {
                     'gender' => $_POST['gender'],
                     'age' => $_POST['age'],
                     'breed' => $_POST['breed'],
-                    'description' => $_POST['description']
+                    'description' => $_POST['description'],
+                    'price' => $_POST['price'],
                 ];
                 $petModel->update($_POST['id'], $data);
             } elseif ($action === 'delete') {
