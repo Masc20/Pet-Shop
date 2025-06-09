@@ -87,49 +87,37 @@ $filter_params = http_build_query(array_filter([
                                     style="height: 180px; width: 180px; object-fit: cover; border: 4px solid #FFD700; background: #fff;"
                                     alt="<?php echo htmlspecialchars($pet['name']); ?>">
                                 <div class="card-body text-center">
-                                    <h6 class="card-title fw-bold" style="color: #FF8C00; letter-spacing: 1px;">
-                                        🐾 <?php echo htmlspecialchars($pet['name']); ?>
-                                    </h6>
+                                    <h5 class="card-title fw-bold" style="color: #FF8C00; letter-spacing: 1px;">🐾 <?php echo htmlspecialchars($pet['name']); ?></h5>
                                     <p class="card-text">
-                                        <span class="badge bg-secondary mb-2" style="background: #FFD700; color: #fff; font-size: 0.9rem;">
-                                            <?php echo htmlspecialchars(ucfirst($pet['type'])); ?>
-                                        </span><br>
                                         <small class="text-muted">
-                                            <i class="fas fa-birthday-cake"></i> <?php echo htmlspecialchars($pet['age']); ?> <?php echo htmlspecialchars($pet['age'] === 1 ? 'year' : 'years'); ?>
-                                            <?php if (!empty($pet['breed'])): ?>
-                                                <?php if (isset($pet['type']) && $pet['type'] === 'cat'): ?>
-                                                    <i class="fas fa-fish ms-2"></i>
-                                                <?php else: ?>
-                                                    <i class="fas fa-bone ms-2"></i>
-                                                <?php endif; ?>
-                                                <?php echo htmlspecialchars($pet['breed']); ?>
-                                            <?php endif; ?>
-                                        </small>
+                                            <i class="fas fa-paw"></i> <?php echo ucfirst($pet['type']); ?> • 
+                                            <i class="fas fa-venus-mars"></i> <?php echo ucfirst($pet['gender']); ?> • 
+                                            <i class="fas fa-birthday-cake"></i> <?php echo $pet['age']; ?> years
+                                            <br>
+                                            <i class="fas fa-calendar"></i> Born on <?php echo date('M d, Y', strtotime($pet['birthday'])); ?>
+                                        </small><br>
+                                        <strong>Breed:</strong> <?php echo $pet['breed']; ?>
                                     </p>
                                     <div class="d-grid gap-2">
-                                        <a href="<?php echo BASE_URL; ?>/pet/<?php echo htmlspecialchars($pet['id']); ?>" class="btn btn-outline-secondary rounded-pill fw-bold" style="background-color: #FFD700; color: #333; border-color: #FFD700;">
-                                            <i class="fas fa-paw"></i> Meet <?php echo htmlspecialchars($pet['name']); ?>
+                                        <a href="<?php echo BASE_URL; ?>/pet/<?php echo htmlspecialchars($pet['id']); ?>" class="btn btn-warning rounded-pill fw-bold">
+                                            <i class="fas fa-heart"></i> Meet <?php echo htmlspecialchars($pet['name']); ?>
                                         </a>
                                         <?php if (isset($pet['status']) && $pet['status'] === 'available'): ?>
-                                            <?php if (isset($_SESSION['user_id'])): // Check if user is logged in 
-                                            ?>
+                                            <?php if (isset($_SESSION['user_id'])): ?>
                                                 <form method="POST" action="<?php echo BASE_URL; ?>/adopt" class="d-grid">
                                                     <input type="hidden" name="pet_id" value="<?php echo htmlspecialchars($pet['id']); ?>">
                                                     <button type="submit" class="btn btn-primary btn-sm rounded-pill fw-bold" style="background-color: #FF8C00; border-color: #FF8C00;">
                                                         <i class="fas fa-heart"></i> Adopt Me!
                                                     </button>
                                                 </form>
-                                            <?php else: // User is not logged in 
-                                            ?>
+                                            <?php else: ?>
                                                 <a href="<?php echo BASE_URL; ?>/login" class="btn btn-primary btn-sm rounded-pill fw-bold" style="background-color: #FF8C00; border-color: #FF8C00;">
                                                     <i class="fas fa-sign-in-alt"></i> Login to Adopt
                                                 </a>
                                             <?php endif; ?>
-                                        <?php elseif (isset($pet['status'])): // Pet is not available, but status is set 
-                                        ?>
+                                        <?php elseif (isset($pet['status'])): ?>
                                             <button class="btn btn-secondary btn-sm rounded-pill fw-bold" disabled style="background-color: #FFD700; color: #333; border-color: #FFD700;">
-                                                <?php echo htmlspecialchars(ucfirst($pet['status'])); // Display actual status if not available 
-                                                ?>
+                                                <?php echo htmlspecialchars(ucfirst($pet['status'])); ?>
                                             </button>
                                         <?php endif; ?>
                                     </div>

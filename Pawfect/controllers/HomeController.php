@@ -8,7 +8,7 @@ class HomeController extends Controller {
         $productModel = new Product();
         
         $featuredPets = array_slice($petModel->getAll(), 0, 6);
-        $featuredProducts = $productModel->getTopSoldProducts(4);
+        $featuredProducts = $productModel->getFeaturedProducts();
         
         $this->view('home', [
             'featuredPets' => $featuredPets,

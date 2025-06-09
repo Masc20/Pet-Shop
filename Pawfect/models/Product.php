@@ -8,7 +8,7 @@ class Product {
     }
     
     public function getAll() {
-        $stmt = $this->pdo->query("SELECT * FROM products WHERE is_archived = FALSE ORDER BY id DESC");
+        $stmt = $this->pdo->query("SELECT * FROM products ORDER BY id DESC");
         return $stmt->fetchAll();
     }
     
@@ -19,7 +19,7 @@ class Product {
     }
     
     public function getByType($type) {
-        $stmt = $this->pdo->prepare("SELECT * FROM products WHERE type = ? AND is_archived = FALSE ORDER BY id DESC");
+        $stmt = $this->pdo->prepare("SELECT * FROM products WHERE type = ? ORDER BY id DESC");
         $stmt->execute([$type]);
         return $stmt->fetchAll();
     }
@@ -32,21 +32,6 @@ class Product {
     public function update($id, $data) {
         $stmt = $this->pdo->prepare("UPDATE products SET name = ?, product_image = ?, stock_quantity = ?, type = ?, price = ?, description = ? WHERE id = ?");
         return $stmt->execute([$data['name'], $data['product_image'], $data['stock_quantity'], $data['type'], $data['price'], $data['description'], $id]);
-    }
-    
-    public function archive($id) {
-        $stmt = $this->pdo->prepare("UPDATE products SET is_archived = TRUE WHERE id = ?");
-        return $stmt->execute([$id]);
-    }
-    
-    public function restore($id) {
-        $stmt = $this->pdo->prepare("UPDATE products SET is_archived = FALSE WHERE id = ?");
-        return $stmt->execute([$id]);
-    }
-    
-    public function getArchived() {
-        $stmt = $this->pdo->query("SELECT * FROM products WHERE is_archived = TRUE ORDER BY id DESC");
-        return $stmt->fetchAll();
     }
     
     public function updateStock($id, $quantity) {
@@ -65,12 +50,11 @@ class Product {
             SUM(CASE WHEN type = 'accessories' THEN 1 ELSE 0 END) as accessories,
             SUM(CASE WHEN type = 'foods' THEN 1 ELSE 0 END) as foods,
             SUM(CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END) as out_of_stock
-            FROM products WHERE is_archived = FALSE");
+            FROM products");
         return $stmt->fetch();
     }
 
-    public function search($query, $columns = ['name', 'description'], $limit = 20)
-    {
+    public function search($query, $columns = ['name', 'description'], $limit = 20) {
         if (empty($columns) || empty($query)) {
             return [];
         }
@@ -84,7 +68,7 @@ class Product {
             $params[$paramName] = "%{$query}%";
         }
 
-        $sql = "SELECT * FROM pets WHERE (" . implode(' OR ', $searchConditions) . ") AND is_archived = FALSE";
+        $sql = "SELECT * FROM products WHERE " . implode(' OR ', $searchConditions);
 
         if ($limit) {
             $sql .= " LIMIT {$limit}";
@@ -95,69 +79,54 @@ class Product {
         return $stmt->fetchAll();
     }
 
-    // Get products with pagination, search, and optional filters
-    public function getPaginated($limit, $offset, $type = null, $minPrice = null, $maxPrice = null, $query = null, $stockStatus = null) {
-        $sql = "SELECT * FROM products WHERE is_archived = FALSE";
+    public function getPaginated($limit, $offset, $categoryId = null, $minPrice = null, $maxPrice = null, $query = null, $sortBy = 'id', $sortOrder = 'DESC') {
+        $sql = "SELECT p.*
+                FROM products p  
+                WHERE 1";
         $params = [];
 
-        // Add type filter
-        if ($type && in_array($type, ['foods', 'accessories'])) {
-            $sql .= " AND type = ?";
-            $params[] = $type;
+        if ($query) {
+            $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
         }
 
-        // Add price range filter
-        if ($minPrice !== null && $minPrice !== '') {
-            $sql .= " AND price >= ?";
+
+        if ($minPrice !== null) {
+            $sql .= " AND p.price >= ?";
             $params[] = $minPrice;
         }
-        if ($maxPrice !== null && $maxPrice !== '') {
-            $sql .= " AND price <= ?";
+
+        if ($maxPrice !== null) {
+            $sql .= " AND p.price <= ?";
             $params[] = $maxPrice;
         }
 
-        // Add stock status filter
-        if ($stockStatus) {
-            switch ($stockStatus) {
-                case 'in_stock':
-                    $sql .= " AND stock_quantity > 5";
-                    break;
-                case 'low_stock':
-                    $sql .= " AND stock_quantity > 0 AND stock_quantity <= 5";
-                    break;
-                case 'out_of_stock':
-                    $sql .= " AND stock_quantity = 0";
-                    break;
-            }
-        }
-
-        // Add search query filter
-        if ($query) {
-            $sql .= " AND (name LIKE ? OR description LIKE ?)";
-            $params[] = "%" . $query . "%";
-            $params[] = "%" . $query . "%";
-        }
-
-        // Order by stock quantity (in-stock first) and then by ID
-        $sql .= " ORDER BY CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END, id DESC LIMIT {$limit} OFFSET {$offset}";
+        // Add sorting
+        $validSortColumns = ['name', 'price', 'stock_quantity', 'id'];
+        $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'id';
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+        
+        // Ensure proper table alias in ORDER BY clause
+        $sql .= " ORDER BY p.{$sortBy} {$sortOrder}";
+        
+        // Add LIMIT and OFFSET directly in the SQL string
+        $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Get the total count of products with search and optional filters
     public function getTotalCount($type = null, $minPrice = null, $maxPrice = null, $query = null, $stockStatus = null) {
-        $sql = "SELECT COUNT(*) FROM products WHERE is_archived = FALSE";
+        $sql = "SELECT COUNT(*) FROM products WHERE 1=1";
         $params = [];
 
-        // Add type filter
         if ($type && in_array($type, ['foods', 'accessories'])) {
             $sql .= " AND type = ?";
             $params[] = $type;
         }
 
-        // Add price range filter
         if ($minPrice !== null && $minPrice !== '') {
             $sql .= " AND price >= ?";
             $params[] = $minPrice;
@@ -167,7 +136,6 @@ class Product {
             $params[] = $maxPrice;
         }
 
-        // Add stock status filter
         if ($stockStatus) {
             switch ($stockStatus) {
                 case 'in_stock':
@@ -182,74 +150,10 @@ class Product {
             }
         }
 
-        // Add search query filter
         if ($query) {
             $sql .= " AND (name LIKE ? OR description LIKE ?)";
             $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
-        }
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchColumn();
-    }
-
-    // Get archived products with pagination for admin view
-    public function getArchivedPaginated($limit, $offset) {
-        $sql = "SELECT * FROM products WHERE is_archived = TRUE ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    // Get the total count of archived products for admin view
-    public function getArchivedTotalCount() {
-        $sql = "SELECT COUNT(*) FROM products WHERE is_archived = TRUE";
-        $stmt = $this->pdo->query($sql);
-        return $stmt->fetchColumn();
-    }
-
-    // Get all products with pagination, search, and optional archived filter for admin view
-    public function getAdminPaginated($limit, $offset, $query = null, $isArchived = null) {
-        $sql = "SELECT * FROM products WHERE 1";
-        $params = [];
-
-        // Add search query filter
-        if ($query) {
-            $sql .= " AND (name LIKE ? OR description LIKE ?)";
-            $params[] = "%" . $query . "%";
-            $params[] = "%" . $query . "%";
-        }
-
-        // Add archived filter
-        if ($isArchived !== null && ($isArchived === '0' || $isArchived === '1')) {
-             $sql .= " AND is_archived = ?";
-             $params[] = (int)$isArchived; // Cast to integer
-        }
-
-        $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-    // Get the total count of all products with search and optional archived filter for admin view
-    public function getAdminTotalCount($query = null, $isArchived = null) {
-        $sql = "SELECT COUNT(*) FROM products WHERE 1";
-        $params = [];
-
-        // Add search query filter
-        if ($query) {
-            $sql .= " AND (name LIKE ? OR description LIKE ?)";
-            $params[] = "%" . $query . "%";
-            $params[] = "%" . $query . "%";
-        }
-
-        // Add archived filter
-        if ($isArchived !== null && ($isArchived === '0' || $isArchived === '1')) {
-            $sql .= " AND is_archived = ?";
-            $params[] = (int)$isArchived; // Cast to integer
         }
 
         $stmt = $this->pdo->prepare($sql);
@@ -264,27 +168,101 @@ class Product {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getTopSoldProducts($limit = 4) {
-        $sql = "SELECT p.*, SUM(oi.quantity) as total_sold 
-                FROM products p 
-                JOIN order_items oi ON p.id = oi.product_id 
-                JOIN orders o ON oi.order_id = o.id 
-                WHERE o.status IN ('delivered', 'shipped') 
-                AND p.is_archived = FALSE 
-                GROUP BY p.id 
-                ORDER BY total_sold DESC 
-                LIMIT " . (int)$limit;
+    public function getFeaturedProducts() {
+        // First, get top sold products by type
+        $sql = "WITH RankedProducts AS (
+                    SELECT p.*, 
+                           COALESCE(SUM(oi.quantity), 0) as total_sold,
+                           ROW_NUMBER() OVER (PARTITION BY p.type ORDER BY COALESCE(SUM(oi.quantity), 0) DESC) as type_rank
+                    FROM products p 
+                    LEFT JOIN order_items oi ON p.id = oi.product_id 
+                    LEFT JOIN orders o ON oi.order_id = o.id AND o.status IN ('delivered', 'shipped')
+                    GROUP BY p.id, p.type
+                )
+                SELECT * FROM RankedProducts 
+                WHERE type_rank <= 2 
+                ORDER BY type, total_sold DESC";
         
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        $soldProducts = $stmt->fetchAll();
+        
+        // If we have less than 4 products with sales, get additional products
+        if (count($soldProducts) < 4) {
+            $needed = 4 - count($soldProducts);
+            $soldProductIds = array_column($soldProducts, 'id');
+            
+            // Get additional products that haven't been sold yet
+            $sql = "SELECT p.*, 0 as total_sold 
+                    FROM products p 
+                    WHERE p.id NOT IN (" . implode(',', array_fill(0, count($soldProductIds), '?')) . ")
+                    ORDER BY p.id DESC 
+                    LIMIT ?";
+            
+            $params = array_merge($soldProductIds, [$needed]);
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $additionalProducts = $stmt->fetchAll();
+            
+            // Combine sold and additional products
+            return array_merge($soldProducts, $additionalProducts);
+        }
+        
+        return $soldProducts;
+    }
+
+    public function getTopOutOfStockProducts($limit = 4) {
+        $sql = "SELECT * FROM products 
+                WHERE stock_quantity < 5 
+                ORDER BY stock_quantity ASC 
+                LIMIT " . (int)$limit;
+                
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function getTopOutOfStockProducts($limit = 4) {
-        $sql = "SELECT * FROM products WHERE stock_quantity < 5 ORDER BY stock_quantity ASC LIMIT " . (int)$limit;
+    public function getProductSales($startDate = null, $endDate = null) {
+        $sql = "SELECT 
+                    p.name,
+                    SUM(oi.quantity) as total_sold
+                FROM products p
+                LEFT JOIN order_items oi ON p.id = oi.product_id
+                LEFT JOIN orders o ON oi.order_id = o.id
+                WHERE o.status = 'delivered'";
+        
+        $params = [];
+        
+        if ($startDate) {
+            $sql .= " AND o.order_date >= ?";
+            $params[] = $startDate;
+        }
+        
+        if ($endDate) {
+            $sql .= " AND o.order_date <= ?";
+            $params[] = $endDate . ' 23:59:59';
+        }
+        
+        $sql .= " GROUP BY p.id, p.name
+                  ORDER BY total_sold DESC
+                  LIMIT 5";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getProductTypeDistribution() {
+        $sql = "SELECT 
+                    type,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN stock_quantity < 5 THEN 1 ELSE 0 END) as low_stock_count
+                FROM products 
+                GROUP BY type";
+        
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

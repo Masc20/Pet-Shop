@@ -52,14 +52,14 @@ class Pet
 
     public function create($data)
     {
-        $stmt = $this->pdo->prepare("INSERT INTO pets (name, pet_image, type, gender, age, breed, description, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        return $stmt->execute([$data['name'], $data['pet_image'], $data['type'], $data['gender'], $data['age'], $data['breed'], $data['description'], $data['price']]);
+        $stmt = $this->pdo->prepare("INSERT INTO pets (name, pet_image, type, gender, age, birthday, breed, description, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        return $stmt->execute([$data['name'], $data['pet_image'], $data['type'], $data['gender'], $data['age'], $data['birthday'], $data['breed'], $data['description'], $data['price']]);
     }
 
     public function update($id, $data)
     {
-        $stmt = $this->pdo->prepare("UPDATE pets SET name = ?, pet_image = ?, type = ?, gender = ?, age = ?, breed = ?, description = ?, price = ? WHERE id = ?");
-        return $stmt->execute([$data['name'], $data['pet_image'], $data['type'], $data['gender'], $data['age'], $data['breed'], $data['description'], $data['price'], $id]);
+        $stmt = $this->pdo->prepare("UPDATE pets SET name = ?, pet_image = ?, type = ?, gender = ?, age = ?, birthday = ?, breed = ?, description = ?, price = ? WHERE id = ?");
+        return $stmt->execute([$data['name'], $data['pet_image'], $data['type'], $data['gender'], $data['age'], $data['birthday'], $data['breed'], $data['description'], $data['price'], $id]);
     }
 
     public function delete($id)
@@ -267,67 +267,59 @@ class Pet
     }
 
     // Get all pets with pagination, search, and optional filters for admin view
-    public function getAdminPaginated($limit, $offset, $query = null, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null) {
-        try {
-            error_log("Executing getAdminPaginated with parameters: limit=$limit, offset=$offset, query=$query, type=$type, gender=$gender, breed=$breed, minAge=$minAge, maxAge=$maxAge");
-            
-            $sql = "SELECT * FROM pets WHERE 1=1";
-            $params = [];
+    public function getAdminPaginated($limit, $offset, $query = null, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null, $sortBy = 'id', $sortOrder = 'DESC') {
+        $sql = "SELECT p.*, u.first_name as owner_name 
+                FROM pets p 
+                LEFT JOIN users u ON p.adopted_by_user_id = u.id 
+                WHERE 1";
+        $params = [];
 
-            // Add search query filter (by name or breed)
-            if ($query) {
-                $sql .= " AND (name LIKE ? OR breed LIKE ?)";
-                $params[] = "%" . $query . "%";
-                $params[] = "%" . $query . "%";
-            }
-
-            // Add type filter
-            if ($type && in_array($type, ['dogs', 'cats'])) {
-                $sql .= " AND type = ?";
-                $params[] = $type;
-            }
-
-            // Add gender filter
-            if ($gender && in_array($gender, ['male', 'female'])) {
-                $sql .= " AND gender = ?";
-                $params[] = $gender;
-            }
-
-            // Add breed filter
-            if ($breed) {
-                $sql .= " AND breed LIKE ?";
-                $params[] = "%" . $breed . "%";
-            }
-
-            // Add age range filter
-            if ($minAge !== null && $minAge !== '') {
-                $sql .= " AND age >= ?";
-                $params[] = (int)$minAge;
-            }
-            if ($maxAge !== null && $maxAge !== '') {
-                $sql .= " AND age <= ?";
-                $params[] = (int)$maxAge;
-            }
-
-            $sql .= " ORDER BY id DESC LIMIT {$limit} OFFSET {$offset}";
-            
-            error_log("Final SQL query: " . $sql);
-            error_log("Query parameters: " . print_r($params, true));
-            
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            error_log("Query returned " . count($result) . " pets");
-            if (empty($result)) {
-                error_log("No pets found matching the criteria");
-            }
-            
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Database error in getAdminPaginated: " . $e->getMessage());
-            return [];
+        if ($query) {
+            $sql .= " AND (p.name LIKE ? OR p.breed LIKE ? OR p.description LIKE ?)";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
+            $params[] = "%" . $query . "%";
         }
+
+        if ($type) {
+            $sql .= " AND p.type = ?";
+            $params[] = $type;
+        }
+
+        if ($gender) {
+            $sql .= " AND p.gender = ?";
+            $params[] = $gender;
+        }
+
+        if ($breed) {
+            $sql .= " AND p.breed = ?";
+            $params[] = $breed;
+        }
+
+        if ($minAge !== null) {
+            $sql .= " AND p.age >= ?";
+            $params[] = $minAge;
+        }
+
+        if ($maxAge !== null) {
+            $sql .= " AND p.age <= ?";
+            $params[] = $maxAge;
+        }
+
+        // Add sorting
+        $validSortColumns = ['name', 'type', 'breed', 'age', 'price', 'id'];
+        $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'id';
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+        
+        // Ensure proper table alias in ORDER BY clause
+        $sql .= " ORDER BY p.{$sortBy} {$sortOrder}";
+        
+        // Add LIMIT and OFFSET directly in the SQL string
+        $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getAdminTotalCount($query = null, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null) {
@@ -442,5 +434,88 @@ class Pet
         ");
         $stmt->execute([$userId]);
         return $stmt->fetchAll();
+    }
+
+    public function getMonthlyAdoptions($startDate = null, $endDate = null) {
+        $sql = "SELECT 
+                    DATE_FORMAT(po.created_at, '%Y-%m') as month,
+                    COUNT(*) as count
+                FROM pet_orders po
+                WHERE po.status = 'approved'";
+        
+        $params = [];
+        
+        if ($startDate) {
+            $sql .= " AND po.created_at >= ?";
+            $params[] = $startDate;
+        }
+        
+        if ($endDate) {
+            $sql .= " AND po.created_at <= ?";
+            $params[] = $endDate . ' 23:59:59';
+        }
+        
+        $sql .= " GROUP BY month ORDER BY month ASC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function getUserPaginated($limit, $offset, $type = null, $gender = null, $breed = null, $minAge = null, $maxAge = null, $sortBy = 'created_at', $sortOrder = 'DESC') {
+        $sql = "SELECT * FROM pets WHERE is_adopted = 0";
+        $params = [];
+
+        if ($type) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+
+        if ($gender) {
+            $sql .= " AND gender = ?";
+            $params[] = $gender;
+        }
+
+        if ($breed) {
+            $sql .= " AND breed = ?";
+            $params[] = $breed;
+        }
+
+        if ($minAge !== null) {
+            $sql .= " AND age >= ?";
+            $params[] = $minAge;
+        }
+
+        if ($maxAge !== null) {
+            $sql .= " AND age <= ?";
+            $params[] = $maxAge;
+        }
+
+        // Add sorting
+        $validSortColumns = ['name', 'type', 'breed', 'age', 'price', 'created_at'];
+        $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'created_at';
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+        
+        $sql .= " ORDER BY {$sortBy} {$sortOrder}";
+        $sql .= " LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getPetTypeDistribution() {
+        $sql = "SELECT 
+                    type,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN is_adopted = 1 THEN 1 ELSE 0 END) as adopted_count
+                FROM pets 
+                GROUP BY type";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -247,6 +247,7 @@
                                         <th>Type</th>
                                         <th>Breed</th>
                                         <th>Age</th>
+                                        <th>Birthday</th>
                                         <th>Gender</th>
                                         <th>Adoption Date</th>
                                     </tr>
@@ -268,6 +269,7 @@
                                             <td><span class="badge bg-info"><?php echo ucfirst($pet['type']); ?></span></td>
                                             <td><?php echo ucfirst($pet['breed']); ?></td>
                                             <td><?php echo $pet['age']; ?> years</td>
+                                            <td><?php echo date('M d, Y', strtotime($pet['birthday'])); ?></td>
                                             <td><?php echo ucfirst($pet['gender']); ?></td>
                                             <td><?php echo date('M d, Y H:i A', strtotime($pet['adoption_date'])); ?></td>
                                         </tr>

@@ -15,23 +15,23 @@
     <?php else: ?>
         <form id="checkoutForm" method="POST" action="<?php echo BASE_URL; ?>/cart/checkout">
             <div class="row">
-                <div class="col-md-8">
+                <div class="col-lg-8 col-md-7">
                     <?php foreach ($cartItems as $item): ?>
                     <div class="card mb-3 <?php echo $item['stock_quantity'] == 0 ? 'bg-light' : ''; ?>">
                         <div class="row g-0">
-                            <div class="col-md-3">
+                            <div class="col-md-3 col-4">
                                 <img src="<?php echo BASE_URL . $item['product_image']; ?>" class="img-fluid rounded-start h-100" style="object-fit: cover;" alt="<?php echo $item['name']; ?>">
                             </div>
-                            <div class="col-md-9">
-                                <div class="card-body">
+                            <div class="col-md-9 col-8">
+                                <div class="card-body p-2 p-md-3">
                                     <?php if ($item['stock_quantity'] == 0): ?>
-                                        <div class="alert alert-warning mb-3">
-                                            <i class="fas fa-exclamation-triangle"></i> Uh-oh! 🐶 '<?php echo $item['name']; ?>' has run out of stock, seems like it's a fan favorite! 
-                                            <a href="<?php echo BASE_URL; ?>/pawducts" class="alert-link">You can check back later or explore other paw-some picks</a> for your furry friend
+                                        <div class="alert alert-warning mb-2 mb-md-3 py-2">
+                                            <i class="fas fa-exclamation-triangle"></i> <small>Uh-oh! 🐶 '<?php echo $item['name']; ?>' has run out of stock, seems like it's a fan favorite! 
+                                            <a href="<?php echo BASE_URL; ?>/pawducts" class="alert-link">You can check back later or explore other paw-some picks</a> for your furry friend</small>
                                         </div>
                                     <?php elseif ($item['stock_quantity'] <= 5): ?>
-                                        <div class="alert alert-warning mb-3">
-                                            <i class="fas fa-exclamation-triangle"></i> Heads up! 🐾 '<?php echo $item['name']; ?>' is almost gone, better fetch it fast before it disappears from the shelves!
+                                        <div class="alert alert-warning mb-2 mb-md-3 py-2">
+                                            <i class="fas fa-exclamation-triangle"></i> <small>Heads up! 🐾 '<?php echo $item['name']; ?>' is almost gone, better fetch it fast before it disappears from the shelves!</small>
                                         </div>
                                     <?php endif; ?>
                                     <div class="d-flex justify-content-between align-items-start">
@@ -42,7 +42,7 @@
                                                    data-price="<?php echo $item['price'] * $item['quantity']; ?>"
                                                    <?php echo $item['stock_quantity'] == 0 ? 'disabled' : ''; ?>>
                                             <label class="form-check-label">
-                                                <h5 class="card-title mb-0"><?php echo $item['name']; ?></h5>
+                                                <h5 class="card-title mb-0 fs-6 fs-md-5"><?php echo $item['name']; ?></h5>
                                             </label>
                                         </div>
                                         <button type="button" class="btn btn-sm btn-outline-danger remove-item" 
@@ -51,19 +51,19 @@
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                     </div>
-                                    <p class="card-text">
+                                    <p class="card-text mb-2">
                                         <strong class="text-primary">₱<?php echo number_format($item['price'], 2); ?></strong><br>
                                         <small class="text-muted">Type: <?php echo ucfirst($item['type']); ?></small>
                                     </p>
                                     <div class="d-flex align-items-center">
-                                        <label for="quantity_<?php echo $item['product_id']; ?>" class="me-2">Quantity:</label>
+                                        <label for="quantity_<?php echo $item['product_id']; ?>" class="me-2 small">Qty:</label>
                                         <input type="number" class="form-control form-control-sm quantity-input" 
                                                id="quantity_<?php echo $item['product_id']; ?>" 
                                                name="quantities[<?php echo $item['product_id']; ?>]" 
                                                value="<?php echo ($item['quantity'] > $item['stock_quantity'] && $item['stock_quantity'] > 0) ? 1 : $item['quantity']; ?>" 
                                                min="1" 
                                                max="<?php echo $item['stock_quantity']; ?>"
-                                               style="width: 80px;"
+                                               style="width: 70px;"
                                                <?php echo $item['stock_quantity'] == 0 ? 'disabled' : ''; ?>>
                                     </div>
                                 </div>
@@ -84,8 +84,8 @@
                     </div>
                 </div>
                 
-                <div class="col-md-4">
-                    <div class="card">
+                <div class="col-lg-4 col-md-5">
+                    <div class="card sticky-top" style="top: 20px;">
                         <div class="card-header">
                             <h5 class="mb-0">Order Summary</h5>
                         </div>
@@ -314,6 +314,16 @@ document.addEventListener('DOMContentLoaded', function() {
         removeSelectedModal.show();
     });
 
+    // Handle remove selected modal close button
+    document.querySelector('#removeSelectedModal .btn-close').addEventListener('click', function() {
+        removeSelectedModal.hide();
+    });
+
+    // Handle remove selected modal cancel button
+    document.querySelector('#removeSelectedModal .btn-secondary').addEventListener('click', function() {
+        removeSelectedModal.hide();
+    });
+
     // Confirm remove selected
     document.getElementById('confirmRemoveSelected').addEventListener('click', function() {
         const selectedItems = Array.from(productCheckboxes)
@@ -349,6 +359,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Handle remove item modal close button
+    document.querySelector('#removeItemModal .btn-close').addEventListener('click', function() {
+        removeItemModal.hide();
+    });
+
+    // Handle remove item modal cancel button
+    document.querySelector('#removeItemModal .btn-secondary').addEventListener('click', function() {
+        removeItemModal.hide();
+    });
+
     // Form submission validation
     checkoutForm.addEventListener('submit', function(e) {
         const selectedItems = Array.from(productCheckboxes)
@@ -379,5 +399,93 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTotal();
 });
 </script>
+
+<style>
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .alert {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+    
+    .quantity-input {
+        width: 60px !important;
+    }
+    
+    .sticky-top {
+        position: relative !important;
+        top: 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .card-title {
+        font-size: 1rem !important;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+}
+
+.alert {
+    margin-bottom: 0.5rem;
+}
+
+.alert-link {
+    text-decoration: underline;
+}
+
+.form-check-input:checked {
+    background-color: #FF8C00;
+    border-color: #FF8C00;
+}
+
+.btn-primary {
+    background-color: #FF8C00;
+    border-color: #FF8C00;
+}
+
+.btn-primary:hover {
+    background-color: #e67e00;
+    border-color: #e67e00;
+}
+
+.btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.modal-content {
+    border-radius: 10px;
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+
+.quantity-input:focus {
+    border-color: #FF8C00;
+    box-shadow: 0 0 0 0.2rem rgba(255, 140, 0, 0.25);
+}
+</style>
 
 <?php require_once 'views/layout/footer.php'; ?>

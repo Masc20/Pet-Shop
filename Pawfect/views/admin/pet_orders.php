@@ -64,74 +64,81 @@ $query = $_GET['query'] ?? '';
                                 </thead>
                                 <tbody>
                                     <?php foreach ($orders as $order): ?>
-                                        <tr>
-                                            <td><?php echo $order['order_number']; ?></td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <img src="<?php echo BASE_URL . $order['pet_image']; ?>" alt="<?php echo $order['pet_name']; ?>" class="rounded-circle me-2" width="40" height="40">
-                                                    <div>
-                                                        <div class="fw-bold"><?php echo $order['pet_name']; ?></div>
-                                                        <small class="text-muted"><?php echo ucfirst($order['type']); ?> - <?php echo $order['breed']; ?></small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
+                                    <tr>
+                                        <td data-label="Order Number"><?php echo $order['order_number']; ?></td>
+                                        <td data-label="Pet">
+                                            <div class="d-flex align-items-center">
+                                                <img src="<?php echo BASE_URL . htmlspecialchars($order['pet_image']); ?>" 
+                                                     alt="<?php echo $order['pet_name']; ?>" 
+                                                     class="rounded-circle me-2" 
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
                                                 <div>
-                                                    <div class="fw-bold"><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></div>
-                                                    <small class="text-muted"><?php echo $order['email']; ?></small>
+                                                    <div class="fw-bold"><?php echo $order['pet_name']; ?></div>
+                                                    <small class="text-muted"><?php echo $order['breed']; ?></small>
                                                 </div>
-                                            </td>
-                                            <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
-                                            <td>
-                                                <?php
-                                                $statusClass = [
-                                                    'pending' => 'warning',
-                                                    'approved' => 'success',
-                                                    'rejected' => 'danger',
-                                                    'cancelled' => 'secondary'
-                                                ][$order['status']] ?? 'secondary';
-                                                ?>
-                                                <span class="badge bg-<?php echo $statusClass; ?>">
-                                                    <?php echo ucfirst($order['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td><?php echo ucfirst($order['payment_method']); ?></td>
-                                            <td><?php echo date('M d, Y H:i A', strtotime($order['created_at'])); ?></td>
-                                            <td>
-                                                <?php if ($order['status'] === 'pending'): ?>
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        Update Status
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li>
-                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal" 
-                                                               data-order-id="<?php echo $order['id']; ?>"
-                                                               data-status="approved">
-                                                                <i class="fas fa-check text-success"></i> Approve
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
-                                                               data-order-id="<?php echo $order['id']; ?>"
-                                                               data-status="rejected">
-                                                                <i class="fas fa-times text-danger"></i> Reject
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
-                                                               data-order-id="<?php echo $order['id']; ?>"
-                                                               data-status="cancelled">
-                                                                <i class="fas fa-ban text-warning"></i> Cancel
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                                <?php else: ?>
-                                                <span class="text-muted">No actions available</span>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </td>
+                                        <td data-label="Customer">
+                                            <div class="d-flex flex-column">
+                                                <span class="fw-bold"><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></span>
+                                                <small class="text-muted"><?php echo $order['email']; ?></small>
+                                            </div>
+                                        </td>
+                                        <td data-label="Amount">₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                                        <td data-label="Status">
+                                            <?php
+                                            $statusClass = [
+                                                'pending' => 'warning',
+                                                'approved' => 'success',
+                                                'rejected' => 'danger',
+                                                'cancelled' => 'secondary'
+                                            ][$order['status']] ?? 'secondary';
+                                            ?>
+                                            <span class="badge bg-<?php echo $statusClass; ?>">
+                                                <?php echo ucfirst($order['status']); ?>
+                                            </span>
+                                        </td>
+                                        <td data-label="Payment"><?php echo ucfirst($order['payment_method']); ?></td>
+                                        <td data-label="Created Date"><?php echo date('M d, Y H:i A', strtotime($order['created_at'])); ?></td>
+                                        <td data-label="Actions">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Update Status
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal" 
+                                                           data-order-id="<?php echo $order['id']; ?>"
+                                                           data-status="pending">
+                                                            <i class="fas fa-clock text-warning"></i> Pending
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
+                                                           data-order-id="<?php echo $order['id']; ?>"
+                                                           data-status="approved">
+                                                            <i class="fas fa-check text-success"></i> Approve
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
+                                                           data-order-id="<?php echo $order['id']; ?>"
+                                                           data-status="rejected">
+                                                            <i class="fas fa-times text-danger"></i> Reject
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
+                                                           data-order-id="<?php echo $order['id']; ?>"
+                                                           data-status="cancelled">
+                                                            <i class="fas fa-ban text-danger"></i> Cancel Order
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -218,11 +225,113 @@ document.addEventListener('DOMContentLoaded', function() {
             
             document.getElementById('updateOrderId').value = orderId;
             document.getElementById('updateStatus').value = status;
-            
             document.querySelector('textarea[name="admin_notes"]').value = '';
         });
     }
 });
 </script>
+
+<style>
+/* Responsive table styles */
+@media screen and (max-width: 768px) {
+    .table-responsive {
+        border: 0;
+    }
+    
+    .table thead {
+        display: none;
+    }
+    
+    .table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .table td {
+        display: block;
+        text-align: right;
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        position: relative;
+    }
+    
+    .table td:last-child {
+        border-bottom: 0;
+    }
+    
+    .table td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-right: 1rem;
+    }
+    
+    /* Adjust dropdown for mobile */
+    .dropdown {
+        width: 100%;
+    }
+    
+    .dropdown .btn {
+        width: 100%;
+        text-align: left;
+    }
+    
+    .dropdown-menu {
+        width: 100%;
+    }
+    
+    /* Adjust badge styles for mobile */
+    .badge {
+        display: inline-block;
+        padding: 0.5em 0.75em;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+    
+    /* Adjust pet image and info layout */
+    .d-flex.align-items-center {
+        justify-content: flex-end;
+    }
+    
+    .d-flex.align-items-center img {
+        margin-left: 0.5rem;
+        margin-right: 0;
+    }
+    
+    /* Adjust customer info layout */
+    .d-flex.flex-column {
+        align-items: flex-end;
+    }
+    
+    .d-flex.flex-column small {
+        margin-top: 0.25rem;
+    }
+}
+
+/* Existing pagination styles */
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: none;
+    color: #FF8C00;
+}
+
+.pagination .page-link:hover {
+    background: #FF8C00;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background: #FF8C00;
+    border-color: #FF8C00;
+}
+</style>
 
 <?php require_once 'views/layout/footer.php'; ?>

@@ -18,6 +18,13 @@
                     <p><?php echo $pet['age']; ?> years old</p>
                 </div>
                 <div class="col-6">
+                    <h6><i class="fas fa-calendar text-primary"></i> Birthday</h6>
+                    <p><?php echo date('F d, Y', strtotime($pet['birthday'])); ?></p>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-6">
                     <h6><i class="fas fa-tag text-primary"></i> Breed</h6>
                     <p><?php echo $pet['breed']; ?></p>
                 </div>

@@ -217,6 +217,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Handle remove item modal close button
+    document.querySelector('#removeItemModal .btn-close').addEventListener('click', function() {
+        removeItemModal.hide();
+    });
+
+    // Handle remove item modal cancel button
+    document.querySelector('#removeItemModal .btn-secondary').addEventListener('click', function() {
+        removeItemModal.hide();
+    });
+
     // Remove selected items
     removeSelectedBtn.addEventListener('click', function() {
         const selectedItems = Array.from(productCheckboxes)
@@ -229,6 +239,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         removeSelectedModal.show();
+    });
+
+    // Handle remove selected modal close button
+    document.querySelector('#removeSelectedModal .btn-close').addEventListener('click', function() {
+        removeSelectedModal.hide();
+    });
+
+    // Handle remove selected modal cancel button
+    document.querySelector('#removeSelectedModal .btn-secondary').addEventListener('click', function() {
+        removeSelectedModal.hide();
     });
 
     // Confirm remove selected

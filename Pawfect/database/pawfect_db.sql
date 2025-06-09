@@ -22,14 +22,16 @@ CREATE TABLE IF NOT EXISTS pets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     pet_image TEXT NOT NULL DEFAULT '/uploads/placeholder.png',
-    is_adopted BOOLEAN DEFAULT FALSE,
     type ENUM('cats', 'dogs') NOT NULL,
     gender ENUM('male', 'female') NOT NULL,
     age INT NOT NULL,
+    birthday DATE NOT NULL,
     breed VARCHAR(100),
     description TEXT,
     price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    is_adopted BOOLEAN DEFAULT FALSE,
     adopted_by_user_id INT NULL,
+    adoption_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (adopted_by_user_id) REFERENCES users(id)
 );
 
@@ -41,8 +43,7 @@ CREATE TABLE IF NOT EXISTS products (
     stock_quantity INT NOT NULL DEFAULT 0,
     type ENUM('foods', 'accessories') NOT NULL,
     price DECIMAL(10,2) NOT NULL,
-    description TEXT,
-    is_archived BOOLEAN DEFAULT FALSE
+    description TEXT
 );
 
 -- Create delivery_addresses table
@@ -69,6 +70,7 @@ CREATE TABLE IF NOT EXISTS cart (
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    order_number VARCHAR(50) UNIQUE NOT NULL,
     user_id INT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
@@ -146,16 +148,17 @@ VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScy
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES 
-('site_logo', 'http://localhost/Pawfect/public/uploads/logo/6834bad72c5c5_PawfectPetShopLogo.jpg'),
+('brand_name', 'Pawfect Pet Shop')
+('site_logo', '/public/uploads/logo/PawfectPetShopLogo.jpg'),
 ('primary_color', '#FF8C00'),
 ('secondary_color', '#FFD700');
 
 -- Sample pets data
-INSERT INTO pets (name, pet_image, type, gender, age, breed, description, price) VALUES
-('Buddy', '/public/placeholder.svg', 'dogs', 'male', 2, 'Golden Retriever', 'Buddy is a friendly and energetic Golden Retriever who loves playing fetch and swimming. He has a gentle temperament and gets along well with children and other pets. Buddy is house-trained and knows basic commands. He would make a perfect family companion!', 299.99),
-('Luna', '/public/placeholder.svg', 'cats', 'female', 1, 'Persian', 'Luna is a beautiful Persian cat with a calm and affectionate personality. She enjoys lounging in sunny spots and being groomed.', 249.99),
-('Max', '/public/placeholder.svg', 'dogs', 'male', 3, 'German Shepherd', 'Max is a loyal and intelligent German Shepherd with excellent protective instincts. He is well-trained and responds well to commands. Max has a strong work ethic and would excel in activities like obedience training or agility courses. He needs an active family who can provide plenty of exercise and mental stimulation.', 349.99),
-('Bella', '/public/placeholder.svg', 'cats', 'female', 2, 'Siamese', 'Bella is a vocal and social Siamese cat who loves attention and playtime.', 199.99);
+INSERT INTO pets (name, pet_image, type, gender, age, birthday, breed, description, price) VALUES
+('Buddy', '/public/placeholder.svg', 'dogs', 'male', 2, '2023-01-01', 'Golden Retriever', 'Buddy is a friendly and energetic Golden Retriever who loves playing fetch and swimming. He has a gentle temperament and gets along well with children and other pets. Buddy is house-trained and knows basic commands. He would make a perfect family companion!', 299.99),
+('Luna', '/public/placeholder.svg', 'cats', 'female', 1, '2023-02-01', 'Persian', 'Luna is a beautiful Persian cat with a calm and affectionate personality. She enjoys lounging in sunny spots and being groomed.', 249.99),
+('Max', '/public/placeholder.svg', 'dogs', 'male', 3, '2023-03-01', 'German Shepherd', 'Max is a loyal and intelligent German Shepherd with excellent protective instincts. He is well-trained and responds well to commands. Max has a strong work ethic and would excel in activities like obedience training or agility courses. He needs an active family who can provide plenty of exercise and mental stimulation.', 349.99),
+('Bella', '/public/placeholder.svg', 'cats', 'female', 2, '2023-04-01', 'Siamese', 'Bella is a vocal and social Siamese cat who loves attention and playtime.', 199.99);
 
 -- Sample products data
 INSERT INTO products (name, product_image, stock_quantity, type, price, description) VALUES

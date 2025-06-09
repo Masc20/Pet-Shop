@@ -23,8 +23,9 @@ class Order extends Model {
     }
     
     public function createOrder($userId, $totalAmount, $deliveryAddressId, $paymentMethod) {
-        $stmt = $this->pdo->prepare("INSERT INTO orders (user_id, total_amount, delivery_address_id, payment_method, order_date) VALUES (?, ?, ?, ?, NOW())");
-        $stmt->execute([$userId, $totalAmount, $deliveryAddressId, $paymentMethod]);
+        $orderNumber = $this->generateOrderNumber();
+        $stmt = $this->pdo->prepare("INSERT INTO orders (order_number, user_id, total_amount, delivery_address_id, payment_method, order_date, status) VALUES (?, ?, ?, ?, ?, NOW(), 'pending')");
+        $stmt->execute([$orderNumber, $userId, $totalAmount, $deliveryAddressId, $paymentMethod]);
         return $this->pdo->lastInsertId();
     }
     
@@ -246,7 +247,7 @@ class Order extends Model {
      * @param array|null $statuses Filter by order statuses
      * @return array Orders with items
      */
-    public function getUserOrders($userId, $limit = 5, $offset = 0, $statuses = null) {
+    public function getUserOrders($userId, $limit = 5, $offset = 0, $statuses = null, $sortBy = 'order_date', $sortOrder = 'DESC') {
         try {
             $sql = "
                 SELECT o.*, u.first_name, u.last_name, u.email,
@@ -268,8 +269,15 @@ class Order extends Model {
                 }
                 $sql .= " AND o.status IN (" . implode(',', $placeholders) . ")";
             }
+
+            // Add sorting
+            $validSortColumns = ['order_date', 'total_amount', 'status'];
+            $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'order_date';
+            $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
             
-            $sql .= " ORDER BY o.order_date DESC LIMIT :limit OFFSET :offset";
+            $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
+            $sql .= " LIMIT :limit OFFSET :offset";
+            
             $params['limit'] = (int)$limit;
             $params['offset'] = (int)$offset;
             
@@ -412,9 +420,8 @@ class Order extends Model {
         ];
     }
     
-    public function getTotalRevenue($status = ['delivered']) {
-        $statusList = "'" . implode("','", $status) . "'";
-        $sql = "SELECT SUM(total) as revenue FROM {$this->table} WHERE status IN ({$statusList})";
+    public function getTotalRevenue() {
+        $sql = "SELECT SUM(total_amount) as revenue FROM {$this->table} WHERE status = 'cancelled'";
         $result = db_select_one($sql);
         return (float)($result['revenue'] ?? 0);
     }
@@ -541,7 +548,7 @@ class Order extends Model {
     }
 
     // Get all orders with pagination for admin view
-    public function getAdminPaginated($limit, $offset, $query = null, $status = null, $startDate = null, $endDate = null) {
+    public function getAdminPaginated($limit, $offset, $query = null, $status = null, $startDate = null, $endDate = null, $sortBy = 'order_date', $sortOrder = 'DESC') {
         // Changed: Added search, status, and date range filters
         $sql = "SELECT o.*, u.first_name, u.last_name, u.email, da.city, da.barangay, da.street, da.zipcode 
                 FROM orders o 
@@ -553,7 +560,8 @@ class Order extends Model {
 
         // Add search query filter
         if ($query) {
-            $sql .= " AND (o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $sql .= " AND (o.order_number LIKE ? OR o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
@@ -576,7 +584,18 @@ class Order extends Model {
             $params[] = $endDate . ' 23:59:59'; // Include end of the day
         }
 
-        $sql .= " ORDER BY o.order_date DESC LIMIT {$limit} OFFSET {$offset}";
+        // Add sorting
+        $validSortColumns = ['order_date', 'first_name', 'last_name', 'total_amount', 'status'];
+        $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'order_date';
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+
+        if ($sortBy === 'first_name' || $sortBy === 'last_name') {
+            $sql .= " ORDER BY u.{$sortBy} {$sortOrder}, o.order_date DESC";
+        } else {
+            $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
+        }
+
+        $sql .= " LIMIT {$limit} OFFSET {$offset}";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -613,7 +632,8 @@ class Order extends Model {
 
         // Add search query filter
         if ($query) {
-            $sql .= " AND (o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $sql .= " AND (o.order_number LIKE ? OR o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
@@ -656,6 +676,32 @@ class Order extends Model {
      */
     private function sanitizeString($input) {
         return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
+    }
+
+    public function getMonthlyRevenue($startDate = null, $endDate = null) {
+        $sql = "SELECT 
+                    DATE_FORMAT(delivery_date, '%Y-%m') as month,
+                    COALESCE(SUM(total_amount), 0) as revenue
+                FROM orders 
+                WHERE status = 'delivered'";
+        
+        $params = [];
+        
+        if ($startDate) {
+            $sql .= " AND delivery_date >= ?";
+            $params[] = $startDate;
+        }
+        
+        if ($endDate) {
+            $sql .= " AND delivery_date <= ?";
+            $params[] = $endDate . ' 23:59:59';
+        }
+        
+        $sql .= " GROUP BY month ORDER BY month ASC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

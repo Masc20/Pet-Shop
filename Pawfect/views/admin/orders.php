@@ -28,7 +28,7 @@
                     <form method="GET" action="<?php echo BASE_URL; ?>/admin/orders">
                         <div class="row g-3">
                             <div class="col-md">
-                                <input type="text" name="q" class="form-control" placeholder="Search by Order ID, Customer Name, or Email..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                                <input type="text" name="q" class="form-control" placeholder="Search by Order Number, Customer Name, or Email..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
                             </div>
                             <div class="col-md">
                                 <select name="status" class="form-select">
@@ -61,14 +61,36 @@
                 <div class="card">
 
                     <div class="card-body">
-
+                        <div class="table-responsive">
                         <table class="table table-striped" style="z-index: 11110;">
                             <thead>
                                 <tr>
-                                    <th>Order ID</th>
-                                    <th>Customer</th>
-                                    <th>Total Amount</th>
-                                    <th>Status</th>
+                                        <th>Order Number</th>
+                                        <th>
+                                            Customer
+                                            <div class="btn-group btn-group-sm ms-2">
+                                                <a href="?sort=first_name&order=asc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['status']) ? '&status=' . urlencode($_GET['status']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by customer name (A to Z)">
+                                                    <i class="fas fa-sort-alpha-down"></i>
+                                                </a>
+                                                <a href="?sort=first_name&order=desc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['status']) ? '&status=' . urlencode($_GET['status']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by customer name (Z to A)">
+                                                    <i class="fas fa-sort-alpha-up"></i>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Total Amount
+                                            <div class="btn-group btn-group-sm ms-2">
+                                                <a href="?sort=total_amount&order=asc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['status']) ? '&status=' . urlencode($_GET['status']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by amount (lowest to highest)">
+                                                    <i class="fas fa-sort-numeric-down"></i>
+                                                </a>
+                                                <a href="?sort=total_amount&order=desc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['status']) ? '&status=' . urlencode($_GET['status']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by amount (highest to lowest)">
+                                                    <i class="fas fa-sort-numeric-up"></i>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Status
+                                        </th>
                                     <th>Shipped Date</th>
                                     <th>Delivered Date</th>
                                     <th>Cancelled Date</th>
@@ -78,13 +100,13 @@
                             <tbody>
                                 <?php foreach ($orders as $order): ?>
                                 <tr>
-                                    <td>#<?php echo $order['id']; ?></td>
-                                    <td>
+                                        <td data-label="Order Number"><?php echo $order['order_number']; ?></td>
+                                        <td data-label="Customer">
                                         <?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?><br>
                                         <small class="text-muted"><?php echo htmlspecialchars($order['email']); ?></small>
                                     </td>
-                                    <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
-                                    <td>
+                                        <td data-label="Total Amount">₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                                        <td data-label="Status">
                                         <span class="badge bg-<?php 
                                             echo match($order['status']) {
                                                 'processing' => 'warning',
@@ -97,16 +119,16 @@
                                             <?php echo ucfirst($order['status']); ?>
                                         </span>
                                     </td>
-                                    <td>
+                                        <td data-label="Shipped Date">
                                         <?php echo $order['shipped_date'] ? date('M d, Y h:i A', strtotime($order['shipped_date'])) : '-'; ?>
                                     </td>
-                                    <td>
+                                        <td data-label="Delivered Date">
                                         <?php echo $order['delivery_date'] ? date('M d, Y h:i A', strtotime($order['delivery_date'])) : '-'; ?>
                                     </td>
-                                    <td>
+                                        <td data-label="Cancelled Date">
                                         <?php echo $order['cancelled_date'] ? date('M d, Y h:i A', strtotime($order['cancelled_date'])) : '-'; ?>
                                     </td>
-                                    <td>
+                                        <td data-label="Actions">
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                                 Update Status
@@ -155,6 +177,7 @@
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,10 +265,87 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('textarea[name="admin_notes"]').value = '';
         });
     }
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 </script>
 
 <style>
+/* Responsive table styles */
+@media screen and (max-width: 768px) {
+    .table-responsive {
+        border: 0;
+    }
+    
+    .table thead {
+        display: none;
+    }
+    
+    .table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .table td {
+        display: block;
+        text-align: right;
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        position: relative;
+    }
+    
+    .table td:last-child {
+        border-bottom: 0;
+    }
+    
+    .table td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-right: 1rem;
+    }
+    
+    /* Adjust dropdown for mobile */
+    .dropdown {
+        width: 100%;
+    }
+    
+    .dropdown .btn {
+        width: 100%;
+        text-align: left;
+    }
+    
+    .dropdown-menu {
+        width: 100%;
+    }
+    
+    /* Adjust badge styles for mobile */
+    .badge {
+        display: inline-block;
+        padding: 0.5em 0.75em;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+    
+    /* Improve spacing for empty date fields */
+    .table td:empty::after {
+        content: '-';
+        color: #6c757d;
+    }
+}
+
+/* Existing pagination styles */
 .pagination .page-link {
     border-radius: 8px;
     margin: 0 2px;

@@ -24,16 +24,66 @@ class AdminController extends Controller {
         $productStats = $productModel->getStats();
         $orderStats = $orderModel->getStats();
         $users = $userModel->getAll();
-        $topSoldProducts = $productModel->getTopSoldProducts();
-        $topOutOfStockProducts = $productModel->getTopOutOfStockProducts();
+        
+        // Get date range from GET parameters
+        $startDate = $_GET['startDate'] ?? null;
+        $endDate = $_GET['endDate'] ?? null;
+        
+        // Get analytics data for charts
+        $monthlyRevenue = $orderModel->getMonthlyRevenue($startDate, $endDate);
+        $productSales = $productModel->getProductSales($startDate, $endDate);
+        $petAdoptions = $petModel->getMonthlyAdoptions($startDate, $endDate);
+        $topProducts = $productModel->getProductSales($startDate, $endDate);
+        $lowStockProducts = $productModel->getTopOutOfStockProducts();
+        
+        // Get distribution data for pie charts
+        $productTypeDistribution = $productModel->getProductTypeDistribution();
+        $petTypeDistribution = $petModel->getPetTypeDistribution();
         
         $this->view('admin/dashboard', [
             'petStats' => $petStats,
             'productStats' => $productStats,
             'orderStats' => $orderStats,
             'users' => $users,
-            'topSoldProducts' => $topSoldProducts,
-            'topOutOfStockProducts' => $topOutOfStockProducts
+            'monthlyRevenue' => $monthlyRevenue,
+            'productSales' => $productSales,
+            'petAdoptions' => $petAdoptions,
+            'topProducts' => $topProducts,
+            'lowStockProducts' => $lowStockProducts,
+            'productTypeDistribution' => $productTypeDistribution,
+            'petTypeDistribution' => $petTypeDistribution
+        ]);
+    }
+    
+    public function filter() {
+        if (!isAdmin()) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
+
+        $startDate = $_GET['startDate'] ?? null;
+        $endDate = $_GET['endDate'] ?? null;
+
+        $petModel = new Pet();
+        $productModel = new Product();
+        $orderModel = new Order();
+
+        // Get filtered data for all charts
+        $monthlyRevenue = $orderModel->getMonthlyRevenue($startDate, $endDate);
+        $petAdoptions = $petModel->getMonthlyAdoptions($startDate, $endDate);
+        $topProducts = $productModel->getProductSales($startDate, $endDate);
+        $lowStockProducts = $productModel->getTopOutOfStockProducts();
+        $productTypeDistribution = $productModel->getProductTypeDistribution();
+        $petTypeDistribution = $petModel->getPetTypeDistribution();
+
+        echo json_encode([
+            'monthlyRevenue' => $monthlyRevenue,
+            'petAdoptions' => $petAdoptions,
+            'topProducts' => $topProducts,
+            'lowStockProducts' => $lowStockProducts,
+            'productTypeDistribution' => $productTypeDistribution,
+            'petTypeDistribution' => $petTypeDistribution
         ]);
     }
     
@@ -52,11 +102,13 @@ class AdminController extends Controller {
         $breed = $_GET['breed'] ?? null;
         $minAge = isset($_GET['min_age']) && $_GET['min_age'] !== '' ? (int)$_GET['min_age'] : null;
         $maxAge = isset($_GET['max_age']) && $_GET['max_age'] !== '' ? (int)$_GET['max_age'] : null;
+        $sortBy = $_GET['sort'] ?? 'created_at';
+        $sortOrder = $_GET['order'] ?? 'DESC';
 
         error_log("AdminController pets - Parameters: query=$query, type=$type, gender=$gender, breed=$breed, minAge=$minAge, maxAge=$maxAge");
 
         // Get paginated pets and total count based on search and filters
-        $pets = $petModel->getAdminPaginated($limit, $offset, $query, $type, $gender, $breed, $minAge, $maxAge);
+        $pets = $petModel->getAdminPaginated($limit, $offset, $query, $type, $gender, $breed, $minAge, $maxAge, $sortBy, $sortOrder);
         $totalPets = $petModel->getAdminTotalCount($query, $type, $gender, $breed, $minAge, $maxAge);
 
         error_log("AdminController pets - Total pets: $totalPets");
@@ -83,8 +135,10 @@ class AdminController extends Controller {
                     'type' => $_POST['type'],
                     'gender' => $_POST['gender'],
                     'age' => $_POST['age'],
+                    'birthday' => $_POST['birthday'],
                     'breed' => $_POST['breed'],
-                    'description' => $_POST['description']
+                    'description' => $_POST['description'],
+                    'price' => $_POST['price']
                 ];
                 $petModel->create($data);
             } elseif ($action === 'update') {
@@ -111,9 +165,10 @@ class AdminController extends Controller {
                     'type' => $_POST['type'],
                     'gender' => $_POST['gender'],
                     'age' => $_POST['age'],
+                    'birthday' => $_POST['birthday'],
                     'breed' => $_POST['breed'],
                     'description' => $_POST['description'],
-                    'price' => $_POST['price'],
+                    'price' => $_POST['price']
                 ];
                 $petModel->update($_POST['id'], $data);
             } elseif ($action === 'delete') {
@@ -134,6 +189,8 @@ class AdminController extends Controller {
             'filterBreed' => $breed,
             'filterMinAge' => $minAge,
             'filterMaxAge' => $maxAge,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder,
             'pageTitle' => 'Manage Pets'
         ]);
     }
@@ -149,11 +206,15 @@ class AdminController extends Controller {
 
         // Get search and filter parameters for admin products
         $query = $_GET['q'] ?? '';
-        $isArchived = $_GET['is_archived'] ?? null;
+        $categoryId = $_GET['category_id'] ?? null;
+        $minPrice = isset($_GET['min_price']) && $_GET['min_price'] !== '' ? (float)$_GET['min_price'] : null;
+        $maxPrice = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_GET['max_price'] : null;
+        $sortBy = $_GET['sort'] ?? 'created_at';
+        $sortOrder = $_GET['order'] ?? 'DESC';
 
         // Get paginated products and total count based on search and filters
-        $products = $productModel->getAdminPaginated($limit, $offset, $query, $isArchived);
-        $totalProducts = $productModel->getAdminTotalCount($query, $isArchived);
+        $products = $productModel->getPaginated($limit, $offset, $categoryId, $minPrice, $maxPrice, $query, $sortBy, $sortOrder);
+        $totalProducts = $productModel->getTotalCount($categoryId, $minPrice, $maxPrice, $query);
         $categories = $categoryModel->getAll();
 
         $totalPages = ceil($totalProducts / $limit);
@@ -181,7 +242,11 @@ class AdminController extends Controller {
                     'description' => $_POST['description'],
                     'category_id' => $_POST['category_id']
                 ];
-                $productModel->create($data);
+                if ($productModel->create($data)) {
+                    $_SESSION['success'] = 'Product created successfully!';
+                } else {
+                    $_SESSION['error'] = 'Failed to create product. Please try again.';
+                }
             } elseif ($action === 'update') {
                 $imagePath = $_POST['current_product_image'] ?? null;
                 
@@ -196,6 +261,7 @@ class AdminController extends Controller {
                     if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
                         $imagePath = '/uploads/products/' . $filename;
                         
+                        // Delete old image if it exists and is not the default image
                         if (!empty($_POST['current_product_image']) && 
                             $_POST['current_product_image'] !== '/assets/images/default-product.png' && 
                             file_exists(__DIR__ . '/..' . $_POST['current_product_image'])) {
@@ -213,18 +279,20 @@ class AdminController extends Controller {
                     'description' => $_POST['description'],
                     'category_id' => $_POST['category_id']
                 ];
-                $productModel->update($_POST['id'], $data);
-            } elseif ($action === 'archive') {
-                $productModel->archive($_POST['id']);
-            } elseif ($action === 'restore') {
-                $productModel->restore($_POST['id']);
+                if ($productModel->update($_POST['id'], $data)) {
+                    $_SESSION['success'] = 'Product updated successfully!';
+                } else {
+                    $_SESSION['error'] = 'Failed to update product. Please try again.';
+                }
+            } elseif ($action === 'delete') {
+                if ($productModel->delete($_POST['id'])) {
+                    $_SESSION['success'] = 'Product deleted successfully!';
+                } else {
+                    $_SESSION['error'] = 'Failed to delete product. Please try again.';
+                }
             }
             
-            $redirectUrl = '/admin/pawducts?page=' . $page;
-            if ($isArchived) {
-                $redirectUrl .= '&is_archived=1';
-            }
-            $this->redirect($redirectUrl);
+            $this->redirect('/admin/pawducts?page=' . $page);
         }
         
         $this->view('admin/products', [
@@ -233,56 +301,45 @@ class AdminController extends Controller {
             'currentPage' => $page,
             'totalPages' => $totalPages,
             'searchQuery' => $query,
-            'isArchivedFilter' => $isArchived,
+            'filterCategory' => $categoryId,
+            'filterMinPrice' => $minPrice,
+            'filterMaxPrice' => $maxPrice,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder,
             'pageTitle' => 'Manage Pawducts'
         ]);
     }
     
     public function orders() {
-        $orderModel = new Order();
-        
-        // Pagination settings for admin
-        $limit = 10; // Number of rows per page
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $offset = ($page - 1) * $limit;
+        if (!isAdmin()) {
+            redirect('login');
+        }
 
-        // Get search and filter parameters for admin orders
-        $query = $_GET['q'] ?? '';
+        $page = $_GET['page'] ?? 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $query = $_GET['q'] ?? null;
         $status = $_GET['status'] ?? null;
         $startDate = $_GET['start_date'] ?? null;
         $endDate = $_GET['end_date'] ?? null;
+        $sortBy = $_GET['sort'] ?? 'order_date';
+        $sortOrder = $_GET['order'] ?? 'DESC';
 
-        // Get paginated orders and total count for admin view
-        // This assumes getAdminPaginated and getAdminTotalCount in Order.php
-        // are updated to handle search query, status, and date range filters.
-        $orders = $orderModel->getAdminPaginated($limit, $offset, $query, $status, $startDate, $endDate); // Add new parameters
-        $totalOrders = $orderModel->getAdminTotalCount($query, $status, $startDate, $endDate); // Add new parameters
-
+        $orderModel = new Order();
+        $orders = $orderModel->getAdminPaginated($limit, $offset, $query, $status, $startDate, $endDate, $sortBy, $sortOrder);
+        $totalOrders = $orderModel->getAdminTotalCount($query, $status, $startDate, $endDate);
         $totalPages = ceil($totalOrders / $limit);
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $orderId = $_POST['order_id'];
-            $newStatus = $_POST['status'];
-            $order = $orderModel->getById($orderId);
-            if ($order['status'] === 'delivered' && in_array($newStatus, ['shipped', 'delivered'])) {
-                $_SESSION['error'] = 'Cannot change status. Order is already delivered.';
-            } else {
-                $orderModel->updateStatus($orderId, $newStatus);
-                $_SESSION['success'] = 'Order status updated!';
-            }
-             // Redirect to the current page after action
-             $this->redirect('/admin/orders?page=' . $page);
-        }
-        
+
         $this->view('admin/orders', [
             'orders' => $orders,
             'currentPage' => $page,
             'totalPages' => $totalPages,
-            'searchQuery' => $query, // Pass search query to view
-            'filterStatus' => $status, // Pass status filter to view
-            'filterStartDate' => $startDate, // Pass start date filter to view
-            'filterEndDate' => $endDate, // Pass end date filter to view
-            'pageTitle' => 'Manage Orders'
+            'query' => $query,
+            'status' => $status,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder
         ]);
     }
     
@@ -348,12 +405,13 @@ class AdminController extends Controller {
                 $check = getimagesize($_FILES['site_logo']['tmp_name']);
                 if ($check !== false) {
                     if (move_uploaded_file($_FILES['site_logo']['tmp_name'], $targetFile)) {
-                        $logoPath = BASE_URL . '/public/uploads/logo/' . $filename;
+                        $logoPath = '/public/uploads/logo/' . $filename;
                     }
                 }
             }
             
             // Update settings
+            setSetting('brand_name', $_POST['brand_name']);
             setSetting('site_logo', $logoPath);
             setSetting('primary_color', $_POST['primary_color']);
             setSetting('secondary_color', $_POST['secondary_color']);
@@ -414,7 +472,6 @@ class AdminController extends Controller {
         }
 
         $petOrderModel = new PetOrder();
-        $petModel = new Pet();
 
         try {
             // Update the order status

@@ -15,13 +15,20 @@
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
                         <div class="mb-3">
+                            <label for="brand_name" class="form-label">Brand Name</label>
+                            <input type="text" class="form-control" id="brand_name" name="brand_name" 
+                                   value="<?php echo getSetting('brand_name', 'Pawfect Pet Shop'); ?>" required>
+                            <div class="form-text">This will be used throughout the website as the main brand name.</div>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="site_logo" class="form-label">Site Logo</label>
                             <input type="file" class="form-control" id="site_logo" name="site_logo" accept="image/*">
                             <div class="form-text">Upload your logo image (recommended size: 200x50px)</div>
                             <?php if (getSetting('site_logo')): ?>
                                 <div class="mt-2">
                                     <small>Current logo:</small><br>
-                                    <img src="<?php echo getSetting('site_logo'); ?>" alt="Current Logo" style="max-height: 50px;" class="mt-1">
+                                    <img src="<?php echo BASE_URL . getSetting('site_logo'); ?>" alt="Current Logo" style="max-height: 50px;" class="mt-1">
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -58,7 +65,7 @@
                             <div class="container-fluid">
                                 <a class="navbar-brand" href="#">
                                     <?php if (getSetting('site_logo')): ?>
-                                        <img src="<?php echo getSetting('site_logo'); ?>" alt="Logo Preview" class="logo-img">
+                                        <img src="<?php echo BASE_URL . getSetting('site_logo'); ?>" alt="Logo Preview" class="logo-img">
                                     <?php else: ?>
                                         <div class="text-muted">No logo uploaded</div>
                                     <?php endif; ?>

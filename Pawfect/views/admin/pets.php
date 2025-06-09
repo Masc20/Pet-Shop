@@ -24,7 +24,7 @@
                             </div>
                             <div class="col-md">
                                 <select name="type" class="form-select">
-                                    <option value="">All Categories</option>
+                                    <option value="">All Type</option>
                                     <option value="dogs" <?php echo (isset($_GET['type']) && $_GET['type'] === 'dogs') ? 'selected' : ''; ?>>Dogs</option>
                                     <option value="cats" <?php echo (isset($_GET['type']) && $_GET['type'] === 'cats') ? 'selected' : ''; ?>>Cats</option>
                                 </select>
@@ -62,49 +62,113 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Image</th>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Gender</th>
-                                    <th>Age</th>
-                                    <th>Breed</th>
-                                    <th>Price</th>
+                                    <th>
+                                        Name
+                                        <div class="btn-group btn-group-sm ms-2">
+                                            <a href="?sort=name&order=asc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by name (A to Z)">
+                                                <i class="fas fa-sort-alpha-down"></i>
+                                            </a>
+                                            <a href="?sort=name&order=desc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by name (Z to A)">
+                                                <i class="fas fa-sort-alpha-up"></i>
+                                            </a>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        Type
+                                    </th>
+                                    <th>
+                                        Gender
+                                    </th>
+                                    <th>
+                                        Age
+                                        <div class="btn-group btn-group-sm ms-2">
+                                            <a href="?sort=age&order=asc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by age (youngest to oldest)">
+                                                <i class="fas fa-sort-numeric-down"></i>
+                                            </a>
+                                            <a href="?sort=age&order=desc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by age (oldest to youngest)">
+                                                <i class="fas fa-sort-numeric-up"></i>
+                                            </a>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        Birthday
+                                    </th>
+                                    <th>
+                                        Breed
+                                        <div class="btn-group btn-group-sm ms-2">
+                                            <a href="?sort=breed&order=asc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by breed (A to Z)">
+                                                <i class="fas fa-sort-alpha-down"></i>
+                                            </a>
+                                            <a href="?sort=breed&order=desc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by breed (Z to A)">
+                                                <i class="fas fa-sort-alpha-up"></i>
+                                            </a>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        Price
+                                        <div class="btn-group btn-group-sm ms-2">
+                                            <a href="?sort=price&order=asc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by price (lowest to highest)">
+                                                <i class="fas fa-sort-numeric-down"></i>
+                                            </a>
+                                            <a href="?sort=price&order=desc<?php echo isset($_GET['q']) ? '&q=' . urlencode($_GET['q']) : ''; ?><?php echo isset($_GET['type']) ? '&type=' . urlencode($_GET['type']) : ''; ?><?php echo isset($_GET['gender']) ? '&gender=' . urlencode($_GET['gender']) : ''; ?><?php echo isset($_GET['breed']) ? '&breed=' . urlencode($_GET['breed']) : ''; ?>" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Sort by price (highest to lowest)">
+                                                <i class="fas fa-sort-numeric-up"></i>
+                                            </a>
+                                        </div>
+                                    </th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php if (empty($pets)): ?>
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4">
+                                            <i class="fas fa-paw fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">No pets found</h5>
+                                            <p class="text-muted">Try adjusting your search or filters.</p>
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
                                 <?php foreach ($pets as $pet): ?>
                                 <tr>
-                                    <td><?php echo $pet['id']; ?></td>
-                                    <td>
-                                        <img src="<?php echo BASE_URL . $pet['pet_image']; ?>" alt="<?php echo $pet['name']; ?>" 
-                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                                        <td data-label="Image">
+                                            <img src="<?php echo BASE_URL . htmlspecialchars($pet['pet_image']); ?>" 
+                                                 alt="<?php echo $pet['name']; ?>" 
+                                                 class="rounded" 
+                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                        </td>
+                                        <td data-label="Name">
+                                            <div class="d-flex align-items-center">
+                                                <?php echo $pet['name']; ?>
+                                            </div>
                                     </td>
-                                    <td><?php echo $pet['name']; ?></td>
-                                    <td><span class="badge bg-info"><?php echo ucfirst($pet['type']); ?></span></td>
-                                    <td><?php echo ucfirst($pet['gender']); ?></td>
-                                    <td><?php echo $pet['age']; ?> years</td>
-                                    <td><?php echo $pet['breed']; ?></td>
-                                    <td>₱<?php echo number_format($pet['price'], 2); ?></td>
-                                    <td>
+                                        <td data-label="Type"><?php echo ucfirst($pet['type']); ?></td>
+                                        <td data-label="Gender"><?php echo ucfirst($pet['gender'])?></td>
+                                        <td data-label="Age"><?php echo $pet['age']; ?> years</td>
+                                        <td data-label="Birthday"><?php echo date('M d, Y', strtotime($pet['birthday'])); ?></td>
+                                        <td data-label="Breed"><?php echo $pet['breed']; ?></td>
+                                        <td data-label="Price">₱<?php echo number_format($pet['price'], 2); ?></td>
+                                        <td data-label="Status">
                                         <?php if ($pet['is_adopted']): ?>
                                             <span class="badge bg-success">Adopted</span>
                                         <?php else: ?>
                                             <span class="badge bg-warning">Available</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
+                                        <td data-label="Actions">
+                                            <div class="btn-group">
                                         <button class="btn btn-sm btn-outline-primary" onclick="editPet(<?php echo htmlspecialchars(json_encode($pet)); ?>)">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete(<?php echo htmlspecialchars(json_encode($pet)); ?>)">
                                             <i class="fas fa-trash"></i>
                                         </button>
+                                            </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -195,8 +259,9 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Age (years)</label>
-                            <input type="number" class="form-control" name="age" min="0" max="20" required>
+                            <label class="form-label">Birthday</label>
+                            <input type="date" class="form-control" name="birthday" id="add_birthday" required onchange="calculateAge(this.value, 'add_age')">
+                            <input type="hidden" name="age" id="add_age">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Breed</label>
@@ -204,9 +269,11 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                         <label class="form-label">Price (₱)</label>
                         <input type="number" class="form-control" name="price" min="0" step="0.01" required>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -267,8 +334,9 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Age (years)</label>
-                            <input type="number" class="form-control" name="age" id="edit_age" min="0" max="20" required>
+                            <label class="form-label">Birthday</label>
+                            <input type="date" class="form-control" name="birthday" id="edit_birthday" required onchange="calculateAge(this.value, 'edit_age')">
+                            <input type="hidden" name="age" id="edit_age">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Breed</label>
@@ -276,9 +344,11 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                         <label class="form-label">Price (₱)</label>
                         <input type="number" class="form-control" name="price" id="edit_price" min="0" step="0.01" required>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -296,13 +366,27 @@
 </div>
 
 <script>
+function calculateAge(birthday, ageFieldId) {
+    const today = new Date();
+    const birthDate = new Date(birthday);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    document.getElementById(ageFieldId).value = age;
+}
+
 function editPet(pet) {
     // Set form values
     document.getElementById('edit_pet_id').value = pet.id;
     document.getElementById('edit_name').value = pet.name;
     document.getElementById('edit_type').value = pet.type;
     document.getElementById('edit_gender').value = pet.gender;
-    document.getElementById('edit_age').value = pet.age;
+    document.getElementById('edit_birthday').value = pet.birthday;
+    calculateAge(pet.birthday, 'edit_age');
     document.getElementById('edit_breed').value = pet.breed;
     document.getElementById('edit_price').value = pet.price;
     document.getElementById('edit_description').value = pet.description;
@@ -313,6 +397,30 @@ function editPet(pet) {
     editModal.show();
 }
 
+// Calculate age for all pets in the table when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const petRows = document.querySelectorAll('tbody tr');
+    petRows.forEach(row => {
+        const birthdayCell = row.querySelector('td[data-label="Birthday"]');
+        const ageCell = row.querySelector('td[data-label="Age"]');
+        if (birthdayCell && ageCell) {
+            const birthday = birthdayCell.getAttribute('data-birthday');
+            if (birthday) {
+                const today = new Date();
+                const birthDate = new Date(birthday);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                ageCell.textContent = age + ' years';
+            }
+        }
+    });
+});
+
 function confirmDelete(pet) {
     // Set the pet details in the modal
     document.getElementById('deletePetName').textContent = pet.name;
@@ -322,9 +430,76 @@ function confirmDelete(pet) {
     const deleteModal = new bootstrap.Modal(document.getElementById('deletePetModal'));
     deleteModal.show();
 }
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
 </script>
 
 <style>
+/* Responsive table styles */
+@media screen and (max-width: 768px) {
+    .table-responsive {
+        border: 0;
+    }
+    
+    .table thead {
+        display: none;
+    }
+    
+    .table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .table td {
+        display: block;
+        text-align: right;
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        position: relative;
+    }
+    
+    .table td:last-child {
+        border-bottom: 0;
+    }
+    
+    .table td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-right: 1rem;
+    }
+    
+    /* Adjust image size for mobile */
+    .table td[data-label="Image"] img {
+        width: 60px !important;
+        height: 60px !important;
+    }
+    
+    /* Adjust button group for mobile */
+    .btn-group {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .btn-group .btn {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Existing pagination styles */
 .pagination .page-link {
     border-radius: 8px;
     margin: 0 2px;

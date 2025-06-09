@@ -7,8 +7,8 @@ require_once 'models/User.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>Pawfect Pet Shop</title>
-    <link rel="icon" type="image/jpeg" href="<?php echo BASE_URL; ?>/public/uploads/logo/683f441eb1405_PawfectPetShopLogo.jpg">
+    <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?><?php echo getSetting('brand_name', 'Pawfect Pet Shop'); ?></title>
+    <link rel="icon" type="image/jpeg" href="<?php echo BASE_URL; ?>/public/uploads/logo/PawfectPetShopLogo.jpg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -142,9 +142,9 @@ require_once 'models/User.php';
         <div class="container">
             <a class="navbar-brand" href="<?php echo BASE_URL; ?>">
                 <?php if (getSetting('site_logo')): ?>
-                    <img src="<?php echo getSetting('site_logo'); ?>" alt="Pawfect Pet Shop" class="logo-img">
+                    <img src="<?php echo BASE_URL . getSetting('site_logo'); ?>" alt="<?php echo getSetting('brand_name', 'Pawfect Pet Shop'); ?>" class="logo-img">
                 <?php else: ?>
-                    <img src="<?php echo BASE_URL; ?>/public/uploads/logo/683f441eb1405_PawfectPetShopLogo.jpg" alt="Pawfect Pet Shop" class="logo-img">
+                    <img src="<?php echo BASE_URL; ?>/public/uploads/logo/PawfectPetShopLogo.jpg" alt="<?php echo getSetting('brand_name', 'Pawfect Pet Shop'); ?>" class="logo-img">
                 <?php endif; ?>
             </a>
 
