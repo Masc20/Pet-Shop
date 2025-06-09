@@ -148,7 +148,7 @@ VALUES ('Admin', 'User', 'admin@pawfect.com', '$2y$10$obSMKhiOl.UZH4ThQCOjs.KScy
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES 
-('brand_name', 'Pawfect Pet Shop')
+('brand_name', 'Pawfect Pet Shop'),
 ('site_logo', '/public/uploads/logo/PawfectPetShopLogo.jpg'),
 ('primary_color', '#FF8C00'),
 ('secondary_color', '#FFD700');
