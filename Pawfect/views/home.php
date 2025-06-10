@@ -95,7 +95,7 @@
                                     Out of Stock
                                 </button>
                             <?php endif; ?>
-                            <a href="<?php echo BASE_URL; ?>/pawduct/<?php echo $product['id']; ?>" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold">
+                            <a href="<?php echo BASE_URL; ?>/product/<?php echo $product['id']; ?>" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold">
                                 View Details
                             </a>
                         </div>

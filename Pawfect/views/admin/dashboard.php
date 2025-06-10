@@ -282,7 +282,7 @@ function updateCharts(data) {
     // Update Low Stock Chart
     if (data.lowStockProducts && data.lowStockProducts.length > 0) {
         lowStockChart.data.labels = data.lowStockProducts.map(item => item.name);
-        lowStockChart.data.datasets[0].data = data.lowStockProducts.map(item => item.stock_quantity);
+        lowStockChart.data.datasets[0].data = data.lowStockProducts.map(item => item.stock_quantity === 0 ? -1 : item.stock_quantity);
         lowStockChart.update();
     }
 
@@ -421,17 +421,17 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: originalData.lowStockProducts.map(item => item.name),
             datasets: [{
                 label: 'Stock Level',
-                data: originalData.lowStockProducts.map(item => item.stock_quantity),
+                data: originalData.lowStockProducts.map(item => item.stock_quantity === 0 ? -1 : item.stock_quantity),
                 backgroundColor: function(context) {
                     const value = context.dataset.data[context.dataIndex];
-                    return value > -1 ? '#ffc107' : // Red for out of stock
-                           value <= 5 ? '#dc3545' : // Yellow for low stock
+                    return value === -1 ? '#dc3545' : // Yellow for out of stock
+                           value <= 5 ? '#ffc107' : // Red for low stock
                            '#28a745'; // Green for normal stock
                 },
                 borderColor: function(context) {
                     const value = context.dataset.data[context.dataIndex];
-                    return value > -1 ? '#ffc107' :
-                           value <= 5 ? '#dc3545' :
+                    return value === -1 ? '#dc3545' :
+                           value <= 5 ? '#ffc107' :
                            '#28a745';
                 },
                 borderWidth: 1
@@ -467,12 +467,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         label: function(context) {
                             const value = context.raw;
                             let status = '';
-                            if (value === 0) {
+                            if (value === -1) {
                                 status = ' (Out of Stock)';
                             } else if (value <= 5) {
                                 status = ' (Low Stock)';
                             }
-                            return `Stock Level: ${value}${status}`;
+                            return `Stock Level: ${value === -1 ? 0 : value}${status}`;
                         }
                     }
                 }

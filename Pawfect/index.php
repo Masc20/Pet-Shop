@@ -62,6 +62,12 @@ switch ($path) {
         $controller = new CartController();
         $controller->remove();
         break;
+
+    case '/cart/remove-selected':
+        require_once 'controllers/CartController.php';
+        $controller = new CartController();
+        $controller->removeSelected();
+        break;
     
     case '/cart/checkout':
         require_once 'controllers/CartController.php';
@@ -223,6 +229,12 @@ switch ($path) {
         require_once 'controllers/PawketController.php';
         $controller = new PawketController();
         $controller->remove();
+        break;
+
+    case '/pawket/remove-selected':
+        require_once 'controllers/PawketController.php';
+        $controller = new PawketController();
+        $controller->removeSelected();
         break;
     
     case '/pawket/checkout':

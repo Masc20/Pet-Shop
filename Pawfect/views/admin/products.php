@@ -432,49 +432,15 @@ function confirmDelete(product) {
 // Show flash messages in a modal
 document.addEventListener('DOMContentLoaded', function() {
     <?php if (isset($_SESSION['success'])): ?>
-        showMessageModal('Success', '<?php echo $_SESSION['success']; ?>', 'success');
+        showAlertModal('<?php echo $_SESSION['success']; ?>', 'success');
         <?php unset($_SESSION['success']); ?>
     <?php endif; ?>
     
     <?php if (isset($_SESSION['error'])): ?>
-        showMessageModal('Error', '<?php echo $_SESSION['error']; ?>', 'error');
+        showAlertModal('<?php echo $_SESSION['error']; ?>', 'danger');
         <?php unset($_SESSION['error']); ?>
     <?php endif; ?>
 });
-
-function showMessageModal(title, message, type) {
-    const modalHtml = `
-        <div class="modal fade" id="messageModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-0">${message}</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-${type === 'success' ? 'success' : 'danger'}" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing message modal if any
-    const existingModal = document.getElementById('messageModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add new modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show the modal
-    const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
-    messageModal.show();
-}
 
 // Initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {

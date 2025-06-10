@@ -256,22 +256,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItems = Array.from(productCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
-
-        selectedItems.forEach(petId => {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '<?php echo BASE_URL; ?>/pawket/remove';
             
+        if (selectedItems.length === 0) {
+            alert('Please select items to remove');
+            return;
+        }
+
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?php echo BASE_URL; ?>/pawket/remove-selected';
+                
+        selectedItems.forEach(id => {
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = 'pet_id';
-            input.value = petId;
-            
+            input.name = 'pet_ids[]';
+            input.value = id;
             form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
         });
+        
+        document.body.appendChild(form);
+        form.submit();
+        removeSelectedModal.hide();
     });
+
+    // Function to show message modal
+    function showMessage(message) {
+        showAlertModal(message, 'info');
+    }
 });
 </script>
 

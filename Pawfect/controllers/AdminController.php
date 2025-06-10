@@ -40,6 +40,8 @@ class AdminController extends Controller {
         $productTypeDistribution = $productModel->getProductTypeDistribution();
         $petTypeDistribution = $petModel->getPetTypeDistribution();
         
+        
+
         $this->view('admin/dashboard', [
             'petStats' => $petStats,
             'productStats' => $productStats,

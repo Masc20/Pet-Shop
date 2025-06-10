@@ -169,39 +169,54 @@ class Product {
     }
 
     public function getFeaturedProducts() {
-        // First, get top sold products by type
+        // First, get top sold products by type that are in stock
         $sql = "WITH RankedProducts AS (
                     SELECT p.*, 
                            COALESCE(SUM(oi.quantity), 0) as total_sold,
                            ROW_NUMBER() OVER (PARTITION BY p.type ORDER BY COALESCE(SUM(oi.quantity), 0) DESC) as type_rank
-                    FROM products p 
+                    FROM products p
                     LEFT JOIN order_items oi ON p.id = oi.product_id 
                     LEFT JOIN orders o ON oi.order_id = o.id AND o.status IN ('delivered', 'shipped')
+                    WHERE p.stock_quantity > 0
                     GROUP BY p.id, p.type
                 )
                 SELECT * FROM RankedProducts 
-                WHERE type_rank <= 2 
-                ORDER BY type, total_sold DESC";
+                WHERE type_rank <= 2
+                ORDER BY total_sold DESC";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         $soldProducts = $stmt->fetchAll();
         
-        // If we have less than 4 products with sales, get additional products
+        // If we have less than 4 products with sales, get additional products that are in stock
         if (count($soldProducts) < 4) {
             $needed = 4 - count($soldProducts);
             $soldProductIds = array_column($soldProducts, 'id');
             
-            // Get additional products that haven't been sold yet
-            $sql = "SELECT p.*, 0 as total_sold 
-                    FROM products p 
-                    WHERE p.id NOT IN (" . implode(',', array_fill(0, count($soldProductIds), '?')) . ")
-                    ORDER BY p.id DESC 
-                    LIMIT ?";
+            // Get additional products that haven't been sold yet and are in stock
+            if (empty($soldProductIds)) {
+                // If no sold products, just get the newest in-stock products
+                $sql = "SELECT p.*, 0 as total_sold 
+                        FROM products p 
+                        WHERE p.stock_quantity > 0
+                        ORDER BY p.id DESC 
+                        LIMIT " . (int)$needed;
+            } else {
+                $placeholders = str_repeat('?,', count($soldProductIds) - 1) . '?';
+                $sql = "SELECT p.*, 0 as total_sold 
+                        FROM products p 
+                        WHERE p.id NOT IN ($placeholders)
+                        AND p.stock_quantity > 0
+                        ORDER BY p.id DESC 
+                        LIMIT " . (int)$needed;
+            }
             
-            $params = array_merge($soldProductIds, [$needed]);
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
+            if (!empty($soldProductIds)) {
+                $stmt->execute($soldProductIds);
+            } else {
+                $stmt->execute();
+            }
             $additionalProducts = $stmt->fetchAll();
             
             // Combine sold and additional products

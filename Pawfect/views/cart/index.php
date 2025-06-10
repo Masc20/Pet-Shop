@@ -183,8 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to show message modal
     function showMessage(message) {
-        messageText.textContent = message;
-        messageModal.show();
+        showAlertModal(message, 'info');
     }
 
     // Handle message modal OK button
@@ -330,6 +329,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(cb => cb.checked)
             .map(cb => cb.value);
             
+        if (selectedItems.length === 0) {
+            showMessage('Please select items to remove');
+            return;
+        }
+
         // Create a form and submit it
         const form = document.createElement('form');
         form.method = 'POST';
@@ -345,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.body.appendChild(form);
         form.submit();
+        removeSelectedModal.hide();
     });
 
     // Remove single item

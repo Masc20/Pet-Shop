@@ -198,4 +198,31 @@ class PawketController extends Controller {
             exit;
         }
     }
+
+    public function removeSelected() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_URL . '/login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pet_ids']) && is_array($_POST['pet_ids'])) {
+            $success = true;
+            foreach ($_POST['pet_ids'] as $petId) {
+                if (!$this->pawketModel->removeFromPawket($_SESSION['user_id'], $petId)) {
+                    $success = false;
+                }
+            }
+            
+            if ($success) {
+                $_SESSION['success'] = 'Selected pets removed from pawket';
+            } else {
+                $_SESSION['error'] = 'Failed to remove some pets from pawket';
+            }
+        } else {
+            $_SESSION['error'] = 'No pets selected for removal';
+        }
+        
+        header('Location: ' . BASE_URL . '/pawket');
+        exit;
+    }
 } 
