@@ -2,9 +2,22 @@
 require_once 'models/User.php';
 require_once 'models/Order.php';
 require_once 'models/Pet.php';
+require_once 'models/Product.php';
 
 class UserController extends Controller
 {
+    private $userModel;
+    private $orderModel;
+    private $productModel;
+    private $petModel;
+
+    public function __construct() {
+        $this->userModel = new User();
+        $this->orderModel = new Order();
+        $this->productModel = new Product();
+        $this->petModel = new Pet();
+    }
+
     public function profile()
     {
         if (!isLoggedIn()) {
@@ -95,14 +108,22 @@ class UserController extends Controller
                 $targetFile = $uploadDir . $filename;
                 if (move_uploaded_file($_FILES['avatar']['tmp_name'], $targetFile)) {
                     $data['avatar'] = '/uploads/avatars/' . $filename;
+                    
+                    // Delete old avatar if it exists
+                    if ($user['avatar'] && file_exists(__DIR__ . '/..' . $user['avatar'])) {
+                        unlink(__DIR__ . '/..' . $user['avatar']);
+                    }
                 }
+            } else {
+                // Keep existing avatar if no new one is uploaded
+                $data['avatar'] = $user['avatar'];
             }
 
             if ($userModel->update($_SESSION['user_id'], $data)) {
-                $_SESSION['success'] = 'Profile updated successfully!';
+                setFlashMessage('success', 'Profile updated successfully!');
                 $_SESSION['user_name'] = $data['first_name'] . ' ' . $data['last_name'];
             } else {
-                $_SESSION['error'] = 'Failed to update profile';
+                setFlashMessage('error', 'Failed to update profile');
             }
             $this->redirect('/profile');
         }
@@ -140,13 +161,218 @@ class UserController extends Controller
             if ($stmt->fetch()) {
                 // Update
                 $stmt = $pdo->prepare('UPDATE delivery_addresses SET city=?, barangay=?, street=?, zipcode=? WHERE user_id=?');
-                $stmt->execute([$city, $barangay, $street, $zipcode, $userId]);
+                if ($stmt->execute([$city, $barangay, $street, $zipcode, $userId])) {
+                    setFlashMessage('success', 'Delivery address updated successfully!');
+                } else {
+                    setFlashMessage('error', 'Failed to update delivery address');
+                }
             } else {
                 // Insert
                 $stmt = $pdo->prepare('INSERT INTO delivery_addresses (user_id, city, barangay, street, zipcode) VALUES (?, ?, ?, ?, ?)');
-                $stmt->execute([$userId, $city, $barangay, $street, $zipcode]);
+                if ($stmt->execute([$userId, $city, $barangay, $street, $zipcode])) {
+                    setFlashMessage('success', 'Delivery address added successfully!');
+                } else {
+                    setFlashMessage('error', 'Failed to add delivery address');
+                }
             }
+        } else {
+            setFlashMessage('error', 'Please fill in all address fields');
         }
         $this->redirect('/profile');
+    }
+
+    public function products() {
+        if (!isLoggedIn()) {
+            $this->redirect('/login');
+            return;
+        }
+
+        $productModel = new Product();
+        
+        // Handle product actions
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            
+            switch ($action) {
+                case 'create':
+                    $imagePath = null;
+                    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                        $uploadDir = __DIR__ . '/../uploads/products/';
+                        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                        $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
+                        $targetFile = $uploadDir . $filename;
+                        if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
+                            $imagePath = '/uploads/products/' . $filename;
+                        }
+                    }
+                    
+                    $data = [
+                        'name' => $_POST['name'],
+                        'product_image' => $imagePath,
+                        'stock_quantity' => $_POST['stock_quantity'],
+                        'type' => $_POST['type'],
+                        'price' => $_POST['price'],
+                        'description' => $_POST['description'],
+                        'created_by' => $_SESSION['user_id']
+                    ];
+                    
+                    if ($productModel->create($data)) {
+                        setFlashMessage('success', 'Product created successfully!');
+                    } else {
+                        setFlashMessage('error', 'Failed to create product. Please try again.');
+                    }
+                    break;
+                    
+                case 'update':
+                    $imagePath = $_POST['current_product_image'] ?? null;
+                    
+                    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                        $uploadDir = __DIR__ . '/../uploads/products/';
+                        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                        $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
+                        $targetFile = $uploadDir . $filename;
+                        
+                        if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
+                            $imagePath = '/uploads/products/' . $filename;
+                            
+                            // Delete old image if it exists and is not the default image
+                            if (!empty($_POST['current_product_image']) && 
+                                $_POST['current_product_image'] !== '/assets/images/default-product.png' && 
+                                file_exists(__DIR__ . '/..' . $_POST['current_product_image'])) {
+                                unlink(__DIR__ . '/..' . $_POST['current_product_image']);
+                            }
+                        }
+                    }
+                    
+                    $data = [
+                        'name' => $_POST['name'],
+                        'product_image' => $imagePath,
+                        'stock_quantity' => $_POST['stock_quantity'],
+                        'type' => $_POST['type'],
+                        'price' => $_POST['price'],
+                        'description' => $_POST['description']
+                    ];
+                    
+                    if ($productModel->update($_POST['id'], $data)) {
+                        setFlashMessage('success', 'Product updated successfully!');
+                    } else {
+                        setFlashMessage('error', 'Failed to update product. Please try again.');
+                    }
+                    break;
+                    
+                case 'delete':
+                    if ($productModel->delete($_POST['id'], $_SESSION['user_id'])) {
+                        setFlashMessage('success', 'Product deleted successfully!');
+                    } else {
+                        setFlashMessage('error', 'Failed to delete product. Please try again.');
+                    }
+                    break;
+            }
+            
+            $this->redirect('/user/products');
+            return;
+        }
+        
+        // Get search and filter parameters
+        $search = $_GET['search'] ?? '';
+        $type = $_GET['type'] ?? '';
+        $stockStatus = $_GET['stock_status'] ?? '';
+        $sortBy = $_GET['sort'] ?? 'id';
+        $sortOrder = $_GET['order'] ?? 'DESC';
+        
+        // Pagination settings
+        $limit = 10;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $offset = ($page - 1) * $limit;
+        
+        // Get user's products with search, filter, pagination, and sorting
+        $products = $productModel->getUserProducts(
+            $_SESSION['user_id'],
+            $limit,
+            $offset,
+            $search,
+            $type,
+            $stockStatus,
+            $sortBy,
+            $sortOrder
+        );
+        
+        $totalProducts = $productModel->getUserProductsCount(
+            $_SESSION['user_id'],
+            $search,
+            $type,
+            $stockStatus
+        );
+        
+        $totalPages = ceil($totalProducts / $limit);
+        
+        $this->view('user/products', [
+            'products' => $products,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'pageTitle' => 'My Products'
+        ]);
+    }
+
+    public function dashboard() {
+        if (!isset($_SESSION['user_id'])) {
+            $this->redirect('/login');
+            return;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $totalProducts = $this->productModel->getUserProductsCount($userId);
+        $totalOrders = $this->orderModel->getUserOrdersCount($userId);
+        $lowStockCount = $this->productModel->getLowStockProductsCount($userId);
+        $totalRevenue = $this->orderModel->getUserTotalRevenue($userId);
+        $productTypeData = $this->productModel->getProductTypeDistribution($userId);
+        $monthlySales = $this->orderModel->getMonthlySales($userId, 6);
+        $recentOrders = $this->orderModel->getRecentOrders($userId, 5);
+        $lowStockProducts = $this->productModel->getLowStockProducts($userId, 5);
+        
+        require_once 'views/user/dashboard.php';
+    }
+
+    public function orders() {
+        if (!isLoggedIn()) {
+            redirect('login');
+        }
+        
+        $orderModel = new Order();
+        $page = $_GET['page'] ?? 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $query = $_GET['search'] ?? null;
+        $status = $_GET['status'] ?? null;
+        $sortBy = $_GET['sort'] ?? 'order_date';
+        $sortOrder = $_GET['order'] ?? 'DESC';
+
+        // Get paginated orders for the seller's products
+        $orders = $orderModel->getSellerOrders(
+            $_SESSION['user_id'], 
+            $limit, 
+            $offset, 
+            $status ? [$status] : null,
+            $sortBy,
+            $sortOrder
+        );
+
+        // Get total count for pagination
+        $totalOrders = $orderModel->getSellerOrdersCount(
+            $_SESSION['user_id'],
+            $status ? [$status] : null
+        );
+        $totalPages = ceil($totalOrders / $limit);
+
+        $this->view('user/orders', [
+            'orders' => $orders,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'searchQuery' => $query,
+            'filterStatus' => $status,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder,
+            'pageTitle' => 'My Product Orders'
+        ]);
     }
 }

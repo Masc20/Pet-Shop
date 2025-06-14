@@ -7,14 +7,14 @@ $query = $_GET['query'] ?? '';
 
 <div class="container-fluid">
     <div class="row">
-    <div class="col-md-2 py-4">
+        <div class="col-md-2">
             <?php require_once 'views/layout/admin_sidebar.php'; ?>
         </div>
 
         <!-- Main Content -->
         <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 py-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">Manage Pet Orders</h1>
+                <h2>Manage Pet Orders</h2>
             </div>
 
             <!-- Search and Filter -->
@@ -64,48 +64,48 @@ $query = $_GET['query'] ?? '';
                                 </thead>
                                 <tbody>
                                     <?php foreach ($orders as $order): ?>
-                                    <tr>
+                                        <tr>
                                         <td data-label="Order Number"><?php echo $order['order_number']; ?></td>
                                         <td data-label="Pet">
-                                            <div class="d-flex align-items-center">
+                                                <div class="d-flex align-items-center">
                                                 <img src="<?php echo BASE_URL . htmlspecialchars($order['pet_image']); ?>" 
                                                      alt="<?php echo $order['pet_name']; ?>" 
                                                      class="rounded-circle me-2" 
                                                      style="width: 40px; height: 40px; object-fit: cover;">
-                                                <div>
-                                                    <div class="fw-bold"><?php echo $order['pet_name']; ?></div>
+                                                    <div>
+                                                        <div class="fw-bold"><?php echo $order['pet_name']; ?></div>
                                                     <small class="text-muted"><?php echo $order['breed']; ?></small>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
+                                            </td>
                                         <td data-label="Customer">
                                             <div class="d-flex flex-column">
                                                 <span class="fw-bold"><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></span>
-                                                <small class="text-muted"><?php echo $order['email']; ?></small>
-                                            </div>
-                                        </td>
+                                                    <small class="text-muted"><?php echo $order['email']; ?></small>
+                                                </div>
+                                            </td>
                                         <td data-label="Amount">₱<?php echo number_format($order['total_amount'], 2); ?></td>
                                         <td data-label="Status">
-                                            <?php
-                                            $statusClass = [
-                                                'pending' => 'warning',
-                                                'approved' => 'success',
-                                                'rejected' => 'danger',
-                                                'cancelled' => 'secondary'
-                                            ][$order['status']] ?? 'secondary';
-                                            ?>
-                                            <span class="badge bg-<?php echo $statusClass; ?>">
-                                                <?php echo ucfirst($order['status']); ?>
-                                            </span>
-                                        </td>
+                                                <?php
+                                                $statusClass = [
+                                                    'pending' => 'warning',
+                                                    'approved' => 'success',
+                                                    'rejected' => 'danger',
+                                                    'cancelled' => 'secondary'
+                                                ][$order['status']] ?? 'secondary';
+                                                ?>
+                                                <span class="badge bg-<?php echo $statusClass; ?>">
+                                                    <?php echo ucfirst($order['status']); ?>
+                                                </span>
+                                            </td>
                                         <td data-label="Payment"><?php echo ucfirst($order['payment_method']); ?></td>
                                         <td data-label="Created Date"><?php echo date('M d, Y H:i A', strtotime($order['created_at'])); ?></td>
                                         <td data-label="Actions">
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                    Update Status
-                                                </button>
-                                                <ul class="dropdown-menu">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        Update Status
+                                                    </button>
+                                                    <ul class="dropdown-menu">
                                                     <li>
                                                         <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal" 
                                                            data-order-id="<?php echo $order['id']; ?>"
@@ -113,32 +113,32 @@ $query = $_GET['query'] ?? '';
                                                             <i class="fas fa-clock text-warning"></i> Pending
                                                         </a>
                                                     </li>
-                                                    <li>
-                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
-                                                           data-order-id="<?php echo $order['id']; ?>"
-                                                           data-status="approved">
-                                                            <i class="fas fa-check text-success"></i> Approve
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
-                                                           data-order-id="<?php echo $order['id']; ?>"
-                                                           data-status="rejected">
-                                                            <i class="fas fa-times text-danger"></i> Reject
-                                                        </a>
-                                                    </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal" 
+                                                               data-order-id="<?php echo $order['id']; ?>"
+                                                               data-status="approved">
+                                                                <i class="fas fa-check text-success"></i> Approve
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
+                                                               data-order-id="<?php echo $order['id']; ?>"
+                                                               data-status="rejected">
+                                                                <i class="fas fa-times text-danger"></i> Reject
+                                                            </a>
+                                                        </li>
                                                     <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
-                                                           data-order-id="<?php echo $order['id']; ?>"
-                                                           data-status="cancelled">
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal"
+                                                               data-order-id="<?php echo $order['id']; ?>"
+                                                               data-status="cancelled">
                                                             <i class="fas fa-ban text-danger"></i> Cancel Order
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -192,31 +192,16 @@ $query = $_GET['query'] ?? '';
     </div>
 </div>
 
-<!-- Success Modal -->
-<div class="modal fade" id="successModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Success</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
-                    <p class="mt-3">Order status has been updated successfully!</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+
+    // Handle status update modal
     const updateStatusModal = document.getElementById('updateStatusModal');
-    
     if (updateStatusModal) {
         updateStatusModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;

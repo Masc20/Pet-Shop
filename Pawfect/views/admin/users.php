@@ -1,14 +1,14 @@
 <?php require_once 'views/layout/header.php'; ?>
 
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <div class="col-md-2">
             <?php require_once 'views/layout/admin_sidebar.php'; ?>
         </div>
         
         <!-- Main Content Area -->
-        <div class="col-md-10">
-            <h1 class="fw-bold mb-4">Manage Users</h1>
+        <div class="col-md-10 py-4">
+            <h2>Manage Users</h2>
 
             <!-- Search and Filter Form -->
             <div class="row mb-4">
@@ -40,79 +40,79 @@
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($users as $user): ?>
-                                <tr>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($users as $user): ?>
+                            <tr>
                                     <td data-label="ID"><?php echo $user['id']; ?></td>
                                     <td data-label="Name"><?php echo $user['first_name'] . ' ' . $user['last_name']; ?></td>
                                     <td data-label="Email"><?php echo $user['email']; ?></td>
                                     <td data-label="Phone"><?php echo $user['phone'] ?: 'N/A'; ?></td>
                                     <td data-label="Role">
-                                        <span class="badge bg-<?php echo $user['role'] === 'admin' ? 'danger' : 'primary'; ?>">
-                                            <?php echo ucfirst($user['role']); ?>
-                                        </span>
-                                    </td>
+                                    <span class="badge bg-<?php echo $user['role'] === 'admin' ? 'danger' : 'primary'; ?>">
+                                        <?php echo ucfirst($user['role']); ?>
+                                    </span>
+                                </td>
                                     <td data-label="Status">
-                                        <?php if ($user['is_banned']): ?>
-                                            <span class="badge bg-danger">Banned</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-success">Active</span>
-                                        <?php endif; ?>
-                                    </td>
+                                    <?php if ($user['is_banned']): ?>
+                                        <span class="badge bg-danger">Banned</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-success">Active</span>
+                                    <?php endif; ?>
+                                </td>
                                     <td data-label="Actions">
-                                        <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" 
-                                                        data-bs-toggle="dropdown">
-                                                    Actions
-                                                </button>
-                                                <ul class="dropdown-menu">
+                                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                                    data-bs-toggle="dropdown">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <form method="POST" class="d-inline">
+                                                        <input type="hidden" name="action" value="role">
+                                                        <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                                                        <input type="hidden" name="role" value="<?php echo $user['role'] === 'admin' ? 'user' : 'admin'; ?>">
+                                                        <button type="submit" class="dropdown-item">
+                                                            Make <?php echo $user['role'] === 'admin' ? 'User' : 'Admin'; ?>
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <?php if ($user['is_banned']): ?>
                                                     <li>
-                                                        <form method="POST" class="d-inline">
-                                                            <input type="hidden" name="action" value="role">
-                                                            <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                                            <input type="hidden" name="role" value="<?php echo $user['role'] === 'admin' ? 'user' : 'admin'; ?>">
-                                                            <button type="submit" class="dropdown-item">
-                                                                Make <?php echo $user['role'] === 'admin' ? 'User' : 'Admin'; ?>
-                                                            </button>
-                                                        </form>
+                                                        <button type="button" class="dropdown-item text-success" onclick="confirmUnban(<?php echo htmlspecialchars(json_encode($user)); ?>)">
+                                                            <i class="fas fa-check"></i> Unban User
+                                                        </button>
                                                     </li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <?php if ($user['is_banned']): ?>
-                                                        <li>
-                                                            <button type="button" class="dropdown-item text-success" onclick="confirmUnban(<?php echo htmlspecialchars(json_encode($user)); ?>)">
-                                                                <i class="fas fa-check"></i> Unban User
-                                                            </button>
-                                                        </li>
-                                                    <?php else: ?>
-                                                        <li>
-                                                            <button type="button" class="dropdown-item text-danger" onclick="confirmBan(<?php echo htmlspecialchars(json_encode($user)); ?>)">
-                                                                <i class="fas fa-ban"></i> Ban User
-                                                            </button>
-                                                        </li>
-                                                    <?php endif; ?>
-                                                </ul>
-                                            </div>
-                                        <?php else: ?>
-                                            <span class="text-muted">Current User</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                                <?php else: ?>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-danger" onclick="confirmBan(<?php echo htmlspecialchars(json_encode($user)); ?>)">
+                                                            <i class="fas fa-ban"></i> Ban User
+                                                        </button>
+                                                    </li>
+                                                <?php endif; ?>
+                                            </ul>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted">Current User</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                     </div>
                 </div>
             </div>
@@ -277,6 +277,14 @@ function confirmUnban(user) {
     const modal = new bootstrap.Modal(document.getElementById('userActionModal'));
     modal.show();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
 </script>
 
 <?php require_once 'views/layout/footer.php'; ?>

@@ -1,16 +1,13 @@
 <?php require_once 'views/layout/header.php'; ?>
 
-<!-- Add Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <div class="col-md-2">
             <?php require_once 'views/layout/admin_sidebar.php'; ?>
         </div>
-        
-        <div class="col-md-10">
-            <h1 class="fw-bold mb-4">Admin Dashboard</h1>
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <h2>Admin Dashboard</h2>
             
             <!-- Stats Cards -->
             <div class="row mb-4">                
@@ -29,7 +26,7 @@
                 </div>
                 
                 <div class="col-md-3">
-                    <div class="card text-white bg-success">
+                    <div class="card text-white" style="background: var(--primary-color);">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -43,7 +40,7 @@
                 </div>
                 
                 <div class="col-md-3">
-                    <div class="card text-white bg-info">
+                    <div class="card text-white" style="background: var(--primary-color);">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -57,7 +54,7 @@
                 </div>
                 
                 <div class="col-md-3">
-                    <div class="card text-white bg-warning">
+                    <div class="card text-white" style="background: var(--primary-color);">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -363,8 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Approved Adoptions',
                 data: originalData.petAdoptions.map(item => item.count),
-                backgroundColor: '#28a745',
-                borderColor: '#28a745',
+                backgroundColor: '#FF8C00',
                 borderWidth: 1
             }]
         },
@@ -396,8 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Units Sold',
                 data: originalData.topProducts.map(item => item.total_sold),
-                backgroundColor: '#007bff',
-                borderColor: '#007bff',
+                backgroundColor: '#FF8C00',
                 borderWidth: 1
             }]
         },
@@ -428,12 +423,6 @@ document.addEventListener('DOMContentLoaded', function() {
                            value <= 5 ? '#ffc107' : // Red for low stock
                            '#28a745'; // Green for normal stock
                 },
-                borderColor: function(context) {
-                    const value = context.dataset.data[context.dataIndex];
-                    return value === -1 ? '#dc3545' :
-                           value <= 5 ? '#ffc107' :
-                           '#28a745';
-                },
                 borderWidth: 1
             }]
         },
@@ -448,14 +437,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             return [
                                 {
                                     text: 'Out of Stock',
-                                    fillStyle: '#ffc107',
-                                    strokeStyle: '#ffc107',
+                                    fillStyle: '#dc3545',
+                                    strokeStyle: '#dc3545',
                                     lineWidth: 1
                                 },
                                 {
                                     text: 'Low Stock (1-5)',
-                                    fillStyle: '#dc3545',
-                                    strokeStyle: '#dc3545',
+                                    fillStyle: '#ffc107',
+                                    strokeStyle: '#ffc107',
                                     lineWidth: 1
                                 },
                             ];

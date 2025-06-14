@@ -272,39 +272,39 @@ class Pet
                 FROM pets p 
                 LEFT JOIN users u ON p.adopted_by_user_id = u.id 
                 WHERE 1";
-        $params = [];
+            $params = [];
 
-        if ($query) {
+            if ($query) {
             $sql .= " AND (p.name LIKE ? OR p.breed LIKE ? OR p.description LIKE ?)";
             $params[] = "%" . $query . "%";
-            $params[] = "%" . $query . "%";
-            $params[] = "%" . $query . "%";
-        }
+                $params[] = "%" . $query . "%";
+                $params[] = "%" . $query . "%";
+            }
 
         if ($type) {
             $sql .= " AND p.type = ?";
-            $params[] = $type;
-        }
+                $params[] = $type;
+            }
 
         if ($gender) {
             $sql .= " AND p.gender = ?";
-            $params[] = $gender;
-        }
+                $params[] = $gender;
+            }
 
-        if ($breed) {
+            if ($breed) {
             $sql .= " AND p.breed = ?";
             $params[] = $breed;
-        }
+            }
 
         if ($minAge !== null) {
             $sql .= " AND p.age >= ?";
             $params[] = $minAge;
-        }
+            }
 
         if ($maxAge !== null) {
             $sql .= " AND p.age <= ?";
             $params[] = $maxAge;
-        }
+            }
 
         // Add sorting
         $validSortColumns = ['name', 'type', 'breed', 'age', 'price', 'id'];
@@ -316,9 +316,9 @@ class Pet
         
         // Add LIMIT and OFFSET directly in the SQL string
         $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

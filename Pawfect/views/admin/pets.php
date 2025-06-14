@@ -1,14 +1,14 @@
 <?php require_once 'views/layout/header.php'; ?>
 
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <div class="col-md-2">
             <?php require_once 'views/layout/admin_sidebar.php'; ?>
         </div>
         
         <div class="col-md-10">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="fw-bold">Manage Pets</h1>
+            <div class="d-flex justify-content-between align-items-center mb-4 py-4">
+                <h2>Manage Pets</h2>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPetModal">
                     <i class="fas fa-plus"></i> Add New Pet
                 </button>
@@ -433,9 +433,10 @@ function confirmDelete(pet) {
 
 // Initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
     });
 });
 </script>
@@ -515,6 +516,14 @@ document.addEventListener('DOMContentLoaded', function() {
 .pagination .page-item.active .page-link {
     background: #FF8C00;
     border-color: #FF8C00;
+}
+
+.modal {
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 </style>
 

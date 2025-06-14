@@ -198,114 +198,136 @@ class AdminController extends Controller {
     }
     
     public function products() {
+        if (!isAdmin()) {
+            $this->redirect('/login');
+            return;
+        }
+
         $productModel = new Product();
-        $categoryModel = new Category();
         
-        // Pagination settings for admin
-        $limit = 10; // Number of rows per page
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $offset = ($page - 1) * $limit;
-
-        // Get search and filter parameters for admin products
-        $query = $_GET['q'] ?? '';
-        $categoryId = $_GET['category_id'] ?? null;
-        $minPrice = isset($_GET['min_price']) && $_GET['min_price'] !== '' ? (float)$_GET['min_price'] : null;
-        $maxPrice = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_GET['max_price'] : null;
-        $sortBy = $_GET['sort'] ?? 'created_at';
-        $sortOrder = $_GET['order'] ?? 'DESC';
-
-        // Get paginated products and total count based on search and filters
-        $products = $productModel->getPaginated($limit, $offset, $categoryId, $minPrice, $maxPrice, $query, $sortBy, $sortOrder);
-        $totalProducts = $productModel->getTotalCount($categoryId, $minPrice, $maxPrice, $query);
-        $categories = $categoryModel->getAll();
-
-        $totalPages = ceil($totalProducts / $limit);
-        
+        // Handle product actions
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $action = $_POST['action'];
+            $action = $_POST['action'] ?? '';
             
-            if ($action === 'create') {
-                $imagePath = null;
-                if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = __DIR__ . '/../uploads/products/';
-                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-                    $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
-                    $targetFile = $uploadDir . $filename;
-                    if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
-                        $imagePath = '/uploads/products/' . $filename;
-                    }
-                }
-                $data = [
-                    'name' => $_POST['name'],
-                    'product_image' => $imagePath,
-                    'stock_quantity' => $_POST['stock_quantity'],
-                    'type' => $_POST['type'],
-                    'price' => $_POST['price'],
-                    'description' => $_POST['description'],
-                    'category_id' => $_POST['category_id']
-                ];
-                if ($productModel->create($data)) {
-                    $_SESSION['success'] = 'Product created successfully!';
-                } else {
-                    $_SESSION['error'] = 'Failed to create product. Please try again.';
-                }
-            } elseif ($action === 'update') {
-                $imagePath = $_POST['current_product_image'] ?? null;
-                
-                if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = __DIR__ . '/../uploads/products/';
-                    if (!is_dir($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
-                    }
-                    $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
-                    $targetFile = $uploadDir . $filename;
-                    
-                    if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
-                        $imagePath = '/uploads/products/' . $filename;
-                        
-                        // Delete old image if it exists and is not the default image
-                        if (!empty($_POST['current_product_image']) && 
-                            $_POST['current_product_image'] !== '/assets/images/default-product.png' && 
-                            file_exists(__DIR__ . '/..' . $_POST['current_product_image'])) {
-                            unlink(__DIR__ . '/..' . $_POST['current_product_image']);
+            switch ($action) {
+                case 'create':
+                    $imagePath = null;
+                    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                        $uploadDir = __DIR__ . '/../uploads/products/';
+                        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                        $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
+                        $targetFile = $uploadDir . $filename;
+                        if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
+                            $imagePath = '/uploads/products/' . $filename;
                         }
                     }
-                }
-                
-                $data = [
-                    'name' => $_POST['name'],
-                    'product_image' => $imagePath,
-                    'stock_quantity' => $_POST['stock_quantity'],
-                    'type' => $_POST['type'],
-                    'price' => $_POST['price'],
-                    'description' => $_POST['description'],
-                    'category_id' => $_POST['category_id']
-                ];
-                if ($productModel->update($_POST['id'], $data)) {
-                    $_SESSION['success'] = 'Product updated successfully!';
-                } else {
-                    $_SESSION['error'] = 'Failed to update product. Please try again.';
-                }
-            } elseif ($action === 'delete') {
-                if ($productModel->delete($_POST['id'])) {
-                    $_SESSION['success'] = 'Product deleted successfully!';
-                } else {
-                    $_SESSION['error'] = 'Failed to delete product. Please try again.';
-                }
+                    
+                    $data = [
+                        'name' => $_POST['name'],
+                        'product_image' => $imagePath,
+                        'stock_quantity' => $_POST['stock_quantity'],
+                        'type' => $_POST['type'],
+                        'price' => $_POST['price'],
+                        'description' => $_POST['description']
+                    ];
+                    
+                    if ($productModel->create($data)) {
+                        setFlashMessage('success', 'Product created successfully!');
+                    } else {
+                        setFlashMessage('error', 'Failed to create product. Please try again.');
+                    }
+                    break;
+                    
+                case 'update':
+                    // Get the current product to preserve its image
+                    $currentProduct = $productModel->getById($_POST['id']);
+                    $imagePath = $currentProduct['product_image']; // Keep existing image by default
+                    
+                    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                        $uploadDir = __DIR__ . '/../uploads/products/';
+                        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                        $filename = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_.-]/', '', basename($_FILES['product_image']['name']));
+                        $targetFile = $uploadDir . $filename;
+                        
+                        if (move_uploaded_file($_FILES['product_image']['tmp_name'], $targetFile)) {
+                            $imagePath = '/uploads/products/' . $filename;
+                            
+                            // Delete old image if it exists and is not the default image
+                            if (!empty($currentProduct['product_image']) && 
+                                $currentProduct['product_image'] !== '/assets/images/default-product.png' && 
+                                file_exists(__DIR__ . '/..' . $currentProduct['product_image'])) {
+                                unlink(__DIR__ . '/..' . $currentProduct['product_image']);
+                            }
+                        }
+                    }
+                    
+                    $data = [
+                        'name' => $_POST['name'],
+                        'product_image' => $imagePath,
+                        'stock_quantity' => $_POST['stock_quantity'],
+                        'type' => $_POST['type'],
+                        'price' => $_POST['price'],
+                        'description' => $_POST['description']
+                    ];
+                    
+                    if ($productModel->update($_POST['id'], $data)) {
+                        setFlashMessage('success', 'Product updated successfully!');
+                    } else {
+                        setFlashMessage('error', 'Failed to update product. Please try again.');
+                    }
+                    break;
+                    
+                case 'delete':
+                    if ($productModel->delete($_POST['id'])) {
+                        setFlashMessage('success', 'Product deleted successfully!');
+                    } else {
+                        setFlashMessage('error', 'Failed to delete product. Please try again.');
+                    }
+                    break;
             }
             
-            $this->redirect('/admin/pawducts?page=' . $page);
+            $this->redirect('/admin/pawducts');
+            return;
         }
+        
+        // Get search and filter parameters
+        $query = $_GET['q'] ?? '';
+        $type = $_GET['type'] ?? '';
+        $minPrice = isset($_GET['min_price']) && $_GET['min_price'] !== '' ? (float)$_GET['min_price'] : null;
+        $maxPrice = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_GET['max_price'] : null;
+        $stockStatus = $_GET['stock_status'] ?? '';
+        $sortBy = $_GET['sort'] ?? 'id';
+        $sortOrder = $_GET['order'] ?? 'DESC';
+        
+        // Pagination settings
+        $limit = 10;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $offset = ($page - 1) * $limit;
+        
+        // Get products with search, filter, pagination, and sorting
+        $products = $productModel->getPaginated(
+            $limit,
+            $offset,
+            null, // category_id is not used
+            $minPrice,
+            $maxPrice,
+            $query,
+            $sortBy,
+            $sortOrder
+        );
+        
+        $totalProducts = $productModel->getTotalCount($type, $minPrice, $maxPrice, $query, $stockStatus);
+        $totalPages = ceil($totalProducts / $limit);
         
         $this->view('admin/products', [
             'products' => $products,
-            'categories' => $categories,
             'currentPage' => $page,
             'totalPages' => $totalPages,
             'searchQuery' => $query,
-            'filterCategory' => $categoryId,
+            'filterType' => $type,
             'filterMinPrice' => $minPrice,
             'filterMaxPrice' => $maxPrice,
+            'filterStockStatus' => $stockStatus,
             'sortBy' => $sortBy,
             'sortOrder' => $sortOrder,
             'pageTitle' => 'Manage Pawducts'
@@ -418,7 +440,7 @@ class AdminController extends Controller {
             setSetting('primary_color', $_POST['primary_color']);
             setSetting('secondary_color', $_POST['secondary_color']);
             
-            $_SESSION['success'] = 'Settings updated successfully!';
+            setFlashMessage('success', 'Settings updated successfully!');
             $this->redirect('/admin/settings');
         }
         

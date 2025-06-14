@@ -5,6 +5,7 @@ require_once 'models/User.php';
 <html lang="en">
 
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?><?php echo getSetting('brand_name', 'Pawfect Pet Shop'); ?></title>
@@ -116,26 +117,24 @@ require_once 'models/User.php';
     </style>
 </head>
 
-<body
-    <?php if (isset($_SESSION['success'])): ?>
-        data-session-success="<?php echo htmlspecialchars($_SESSION['success']); ?>"
-    <?php endif; ?>
-    <?php if (isset($_SESSION['error'])): ?>
-        data-session-error="<?php echo htmlspecialchars($_SESSION['error']); ?>"
-    <?php endif; ?>
->
+<body>
     <!-- Flash Messages -->
     <div class="flash-message">
-        <?php if (hasFlashMessages()): ?>
-            <?php foreach (getFlashMessages() as $type => $messages): ?>
-                <?php foreach ($messages as $message): ?>
-                    <div class="alert alert-<?php echo $type === 'error' ? 'danger' : $type; ?> alert-dismissible fade show" role="alert">
-                        <?php echo htmlspecialchars($message); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        <?php endif; ?>
+        <?php
+        require_once __DIR__ . '/../../core/Helpers.php';
+        if (hasFlashMessages()) {
+            $flashMessages = getFlashMessages();
+            foreach ($flashMessages as $type => $messages) {
+                $alertClass = $type === 'success' ? 'alert-success' : 'alert-danger';
+                foreach ($messages as $message) {
+                    echo '<div class="alert ' . $alertClass . ' alert-dismissible fade show" role="alert">';
+                    echo htmlspecialchars($message);
+                    echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+                    echo '</div>';
+                }
+            }
+        }
+        ?>
     </div>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
@@ -209,14 +208,28 @@ require_once 'models/User.php';
                                 <?php echo $_SESSION['user_name']; ?>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/profile">Profile</a></li>
+                                <li>
+                                    <a class="dropdown-item" href="<?php echo BASE_URL; ?>/user/dashboard">
+                                        <i class="fas fa-tachometer-alt me-2"></i> 
+                                        My Dashboard
+                                    </a>
+                                </li>
                                 <?php if (isAdmin()): ?>
-                                    <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/admin">Admin Dashboard</a></li>
+                                    <li>
+                                        <a class="dropdown-item" href="<?php echo BASE_URL; ?>/admin">
+                                            <i class="fas fa-tachometer-alt me-2"></i> 
+                                            Admin Dashboard
+                                        </a>
+                                    </li>
                                 <?php endif; ?>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/logout">Logout</a></li>
+                                <li><a class="nav-link text-danger" href="<?php echo BASE_URL; ?>/logout">
+                                        <i class="fas fa-sign-out-alt me-2"></i>
+                                        Logout
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     <?php else: ?>

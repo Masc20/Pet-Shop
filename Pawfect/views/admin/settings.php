@@ -1,16 +1,16 @@
 <?php require_once 'views/layout/header.php'; ?>
 
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <div class="col-md-2">
             <?php require_once 'views/layout/admin_sidebar.php'; ?>
         </div>
-        <div class="col-md-10">
-            <h1 class="fw-bold mb-4">Website Settings</h1>
+        <div class="col-md-10 py-4">
+            <h2 class="fw-bold mb-4">Website Settings</h2>
             
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Customize Website</h5>
+                    <h5>Customize Website</h5>
                 </div>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
@@ -84,5 +84,15 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+</script>
 
 <?php require_once 'views/layout/footer.php'; ?>

@@ -15,7 +15,7 @@
                     <i class="fas fa-heart"></i> Adopt a Pet
                 </a>
                 <a href="<?php echo BASE_URL; ?>/pawducts" class="btn btn-lg fw-bold mb-2" style="background: #FFD700; color: #fff; border-radius: 30px; font-size: 1.1rem;">
-                    <i class="fas fa-shopping-bag"></i> Shop Products
+                    <i class="fas fa-shopping-bag"></i> Shop Pawducts
                 </a>
             </div>
         </div>

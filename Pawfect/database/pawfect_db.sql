@@ -43,7 +43,9 @@ CREATE TABLE IF NOT EXISTS products (
     stock_quantity INT NOT NULL DEFAULT 0,
     type ENUM('foods', 'accessories') NOT NULL,
     price DECIMAL(10,2) NOT NULL,
-    description TEXT
+    description TEXT,
+    created_by INT NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Create delivery_addresses table

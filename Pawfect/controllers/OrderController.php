@@ -10,7 +10,6 @@ class OrderController extends Controller
 
     public function __construct()
     {
-        parent::__construct();
         $this->orderModel = new Order();
         $this->productModel = new Product();
 
@@ -90,49 +89,53 @@ class OrderController extends Controller
 
     public function cancel($orderId)
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/user/orders');
+            return;
+        }
+
         $userId = $_SESSION['user_id'];
-
+        
+        // Check if the order belongs to the user and can be cancelled
         if (!$this->orderModel->canBeCancelled($orderId, $userId)) {
-            setFlashMessage('error', 'This order cannot be cancelled.');
-            redirect('orders');
-        }
-
-        $reason = $_POST['reason'] ?? null;
-        $success = $this->orderModel->cancelOrder($orderId, $userId, $reason);
-
-        if ($success) {
-            setFlashMessage('success', 'Order cancelled successfully.');
+            $_SESSION['error'] = 'This order cannot be cancelled';
         } else {
-            setFlashMessage('error', 'Failed to cancel order. Please try again.');
+            // Attempt to cancel the order
+            if ($this->orderModel->cancelOrder($orderId, $userId)) {
+                $_SESSION['success'] = 'Order cancelled successfully';
+            } else {
+                $_SESSION['error'] = 'Failed to cancel order';
+            }
         }
-
-        redirect('orders');
+        
+        redirect('/user/orders');
     }
 
-    public function updateStatus($orderId)
+    public function updateStatus($orderId, $status)
     {
-        if (!isAdmin()) {
-            setFlashMessage('error', 'You do not have permission to update order status.');
-            redirect('orders');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/user/orders');
+            return;
         }
 
-        $status = $_POST['status'] ?? '';
-        $notes = $_POST['notes'] ?? null;
-
-        if (!in_array($status, ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])) {
-            setFlashMessage('error', 'Invalid order status.');
-            redirect('orders/show/' . $orderId);
+        $userId = $_SESSION['user_id'];
+        
+        // Validate status
+        $validStatuses = ['processing', 'shipped', 'delivered'];
+        if (!in_array($status, $validStatuses)) {
+            $_SESSION['error'] = 'Invalid status';
+            redirect('/user/orders');
+            return;
         }
 
-        $success = $this->orderModel->updateStatus($orderId, $status, $notes);
-
-        if ($success) {
-            setFlashMessage('success', 'Order status updated successfully.');
+        // Update order status
+        if ($this->orderModel->updateStatus($orderId, $status)) {
+            $_SESSION['success'] = 'Order status updated successfully';
         } else {
-            setFlashMessage('error', 'Failed to update order status. Please try again.');
+            $_SESSION['error'] = 'Failed to update order status';
         }
-
-        redirect('orders/show/' . $orderId);
+        
+        redirect('/user/orders');
     }
 
     public function adminIndex()

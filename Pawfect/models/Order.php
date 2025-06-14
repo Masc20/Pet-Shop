@@ -34,22 +34,6 @@ class Order extends Model {
         return $stmt->execute([$orderId, $productId, $quantity, $price]);
     }
     
-    public function getByUser($userId) {
-        $stmt = $this->pdo->prepare("SELECT o.*, o.shipped_date, da.city, da.barangay, da.street, da.zipcode FROM orders o LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id WHERE o.user_id = ? ORDER BY o.id DESC");
-        $stmt->execute([$userId]);
-        $orders = $stmt->fetchAll();
-        foreach ($orders as &$order) {
-            $order['items'] = $this->getItems($order['id']);
-            $order['delivery_address'] = [
-                'city' => $order['city'],
-                'barangay' => $order['barangay'],
-                'street' => $order['street'],
-                'zipcode' => $order['zipcode']
-            ];
-        }
-        return $orders;
-    }
-    
     public function getById($id) {
         $stmt = $this->pdo->prepare("SELECT * FROM orders WHERE id = ?");
         $stmt->execute([$id]);
@@ -74,7 +58,7 @@ class Order extends Model {
     public function getItems($orderId) {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT oi.*, p.name, p.product_image 
+                SELECT oi.*, p.*
                 FROM order_items oi 
                 JOIN products p ON oi.product_id = p.id 
                 WHERE oi.order_id = :order_id
@@ -271,19 +255,42 @@ class Order extends Model {
             }
 
             // Add sorting
-            $validSortColumns = ['order_date', 'total_amount', 'status'];
+            $validSortColumns = ['order_date', 'total_amount', 'status', 'total_quantity'];
             $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'order_date';
             $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
             
-            $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
-            $sql .= " LIMIT :limit OFFSET :offset";
+            if ($sortBy === 'total_quantity') {
+                $sql = "
+                    SELECT o.*, u.first_name, u.last_name, u.email,
+                           da.city, da.barangay, da.street, da.zipcode,
+                           COALESCE(SUM(oi.quantity), 0) as total_quantity
+                    FROM orders o 
+                    JOIN users u ON o.user_id = u.id 
+                    LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id
+                    LEFT JOIN order_items oi ON o.id = oi.order_id
+                    WHERE o.user_id = :user_id
+                    GROUP BY o.id, u.first_name, u.last_name, u.email, da.city, da.barangay, da.street, da.zipcode
+                    ORDER BY total_quantity {$sortOrder}
+                    LIMIT :limit OFFSET :offset
+                ";
+            } else if ($sortBy === 'total_amount') {
+                $sql .= " ORDER BY CAST(o.total_amount AS DECIMAL(10,2)) {$sortOrder}";
+                $sql .= " LIMIT :limit OFFSET :offset";
+            } else {
+                $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
+                $sql .= " LIMIT :limit OFFSET :offset";
+            }
             
             $params['limit'] = (int)$limit;
             $params['offset'] = (int)$offset;
             
             $stmt = $this->pdo->prepare($sql);
             foreach ($params as $key => $value) {
-                $stmt->bindValue(":$key", $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+                if ($key === 'limit' || $key === 'offset') {
+                    $stmt->bindValue(":$key", $value, PDO::PARAM_INT);
+                } else {
+                    $stmt->bindValue(":$key", $value);
+                }
             }
             
             $stmt->execute();
@@ -339,19 +346,55 @@ class Order extends Model {
         }
     }
     
-    public function getUserOrdersCount($userId, $statuses = null) {
-        $sql = "SELECT COUNT(*) FROM orders WHERE user_id = ?";
-        $params = [$userId];
-        
-        if ($statuses) {
-            $placeholders = str_repeat('?,', count($statuses) - 1) . '?';
-            $sql .= " AND status IN ($placeholders)";
-            $params = array_merge($params, $statuses);
-        }
-        
+    public function getUserOrdersCount($userId) {
+        $sql = "SELECT COUNT(*) as count FROM orders WHERE user_id = ?";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchColumn();
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'];
+    }
+    
+    public function getUserTotalRevenue($userId) {
+        $sql = "SELECT COALESCE(SUM(oi.price * oi.quantity), 0) as total 
+                FROM orders o 
+                JOIN order_items oi ON o.id = oi.order_id
+                JOIN products p ON oi.product_id = p.id
+                WHERE o.status = 'delivered' 
+                AND p.created_by = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+    
+    public function getMonthlySales($userId, $months = 6) {
+        $sql = "SELECT 
+                    DATE_FORMAT(o.delivery_date, '%Y-%m') as month,
+                    COALESCE(SUM(oi.price * oi.quantity), 0) as total
+                FROM orders o 
+                JOIN order_items oi ON o.id = oi.order_id
+                JOIN products p ON oi.product_id = p.id
+                WHERE o.status = 'delivered'
+                AND p.created_by = ?
+                AND o.delivery_date >= DATE_SUB(CURRENT_DATE, INTERVAL ? MONTH)
+                GROUP BY DATE_FORMAT(o.delivery_date, '%Y-%m')
+                ORDER BY month ASC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$userId, $months]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function getRecentOrders($userId, $limit = 5) {
+        $sql = "SELECT id, order_date, total_amount, status 
+                FROM orders 
+                WHERE user_id = ? 
+                ORDER BY order_date DESC 
+                LIMIT ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     /**
@@ -424,18 +467,6 @@ class Order extends Model {
         $sql = "SELECT SUM(total_amount) as revenue FROM {$this->table} WHERE status = 'cancelled'";
         $result = db_select_one($sql);
         return (float)($result['revenue'] ?? 0);
-    }
-    
-    public function getRecentOrders($limit = 10) {
-        $sql = "
-            SELECT o.*, u.first_name, u.last_name
-            FROM {$this->table} o
-            INNER JOIN users u ON o.user_id = u.id
-            ORDER BY o.created_at DESC
-            LIMIT {$limit}
-        ";
-        
-        return db_select($sql);
     }
     
     public function getSalesData($period = '30_days') {
@@ -589,7 +620,10 @@ class Order extends Model {
         $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'order_date';
         $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
 
-        if ($sortBy === 'first_name' || $sortBy === 'last_name') {
+        // Handle numeric sorting for total_amount
+        if ($sortBy === 'total_amount') {
+            $sql .= " ORDER BY CAST(o.total_amount AS DECIMAL(10,2)) {$sortOrder}";
+        } else if ($sortBy === 'first_name' || $sortBy === 'last_name') {
             $sql .= " ORDER BY u.{$sortBy} {$sortOrder}, o.order_date DESC";
         } else {
             $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
@@ -702,6 +736,137 @@ class Order extends Model {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get orders for products created by a specific seller
+     * @param int $sellerId Seller's user ID
+     * @param int $limit Number of records per page
+     * @param int $offset Offset for pagination
+     * @param array|null $statuses Filter by order statuses
+     * @param string $sortBy Column to sort by
+     * @param string $sortOrder Sort order (ASC/DESC)
+     * @return array Orders with items
+     */
+    public function getSellerOrders($sellerId, $limit = 10, $offset = 0, $statuses = null, $sortBy = 'order_date', $sortOrder = 'DESC') {
+        try {
+            $params = ['seller_id' => $sellerId];
+            
+            // Base query with joins
+            $sql = "
+                WITH OrderTotals AS (
+                    SELECT 
+                        o.id,
+                        ABS(SUM(oi.quantity)) as total_quantity
+                    FROM orders o
+                    JOIN order_items oi ON o.id = oi.order_id
+                    JOIN products p ON oi.product_id = p.id 
+                    WHERE p.created_by = :seller_id
+                    GROUP BY o.id
+                )
+                SELECT DISTINCT o.*, u.first_name, u.last_name, u.email,
+                       da.city, da.barangay, da.street, da.zipcode,
+                       COALESCE(ot.total_quantity, 0) as total_quantity
+                FROM orders o 
+                JOIN OrderTotals ot ON o.id = ot.id
+                JOIN order_items oi ON o.id = oi.order_id
+                JOIN products p ON oi.product_id = p.id 
+                JOIN users u ON o.user_id = u.id 
+                LEFT JOIN delivery_addresses da ON o.delivery_address_id = da.id
+                WHERE p.created_by = :seller_id
+            ";
+            
+            // Add status filter if provided
+            if ($statuses && is_array($statuses)) {
+                $placeholders = [];
+                foreach ($statuses as $key => $status) {
+                    $paramName = "status$key";
+                    $placeholders[] = ":$paramName";
+                    $params[$paramName] = $status;
+                }
+                $sql .= " AND o.status IN (" . implode(',', $placeholders) . ")";
+            }
+
+            // Add sorting
+            $validSortColumns = ['order_date', 'total_amount', 'status', 'total_quantity'];
+            $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'order_date';
+            $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+            
+            if ($sortBy === 'total_quantity') {
+                $sql .= " ORDER BY ABS(total_quantity) {$sortOrder}";
+            } else if ($sortBy === 'total_amount') {
+                $sql .= " ORDER BY CAST(o.total_amount AS DECIMAL(10,2)) {$sortOrder}";
+            } else {
+                $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
+            }
+            
+            $sql .= " LIMIT :limit OFFSET :offset";
+            
+            $params['limit'] = (int)$limit;
+            $params['offset'] = (int)$offset;
+            
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue(":$key", $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get items for each order
+            foreach ($orders as &$order) {
+                $order['items'] = $this->getItems($order['id']);
+                $order['delivery_address'] = [
+                    'city' => $order['city'] ?? null,
+                    'barangay' => $order['barangay'] ?? null,
+                    'street' => $order['street'] ?? null,
+                    'zipcode' => $order['zipcode'] ?? null
+                ];
+                unset($order['city'], $order['barangay'], $order['street'], $order['zipcode']);
+            }
+
+            return $orders;
+        } catch (Exception $e) {
+            error_log("Error fetching seller orders: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get total count of orders for products created by a specific seller
+     * @param int $sellerId Seller's user ID
+     * @param array|null $statuses Filter by order statuses
+     * @return int Total number of orders
+     */
+    public function getSellerOrdersCount($sellerId, $statuses = null) {
+        try {
+            $sql = "
+                SELECT COUNT(DISTINCT o.id) 
+                FROM orders o 
+                JOIN order_items oi ON o.id = oi.order_id
+                JOIN products p ON oi.product_id = p.id
+                WHERE p.created_by = :seller_id
+            ";
+            
+            $params = ['seller_id' => $sellerId];
+            
+            if ($statuses && is_array($statuses)) {
+                $placeholders = [];
+                foreach ($statuses as $key => $status) {
+                    $paramName = "status$key";
+                    $placeholders[] = ":$paramName";
+                    $params[$paramName] = $status;
+                }
+                $sql .= " AND o.status IN (" . implode(',', $placeholders) . ")";
+            }
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn();
+        } catch (Exception $e) {
+            error_log("Error counting seller orders: " . $e->getMessage());
+            return 0;
+        }
     }
 }
 ?>

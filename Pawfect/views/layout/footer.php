@@ -68,24 +68,6 @@
   </div>
 </div>
 
-<!-- Generic Alert Modal -->
-<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="alertModalLabel">Notice</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="alertModalBody">
-        <!-- Alert message will be injected here -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -97,19 +79,11 @@
             new bootstrap.Modal(modal);
         });
 
-        // Check for and display session messages in the alert modal
-        const successMessage = document.body.getAttribute('data-session-success');
-        const errorMessage = document.body.getAttribute('data-session-error');
-
-        if (successMessage) {
-            showAlertModal(successMessage, 'success'); // Use alert modal for success too
-            // Clear the session variable after displaying
-            <?php unset($_SESSION['success']); ?>
-        } else if (errorMessage) {
-            showAlertModal(errorMessage, 'danger');
-            // Clear the session variable after displaying
-            <?php unset($_SESSION['error']); ?>
-        }
+        // Initialize tooltips
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(tooltip => {
+            new bootstrap.Tooltip(tooltip);
+        });
     });
 
     function addToCart(productId) {
@@ -244,23 +218,5 @@
             });
         }
     });
-
-    // Generic Alert Modal function
-    function showAlertModal(message, type = 'info') {
-        const modalElement = document.getElementById('alertModal');
-        if (modalElement) {
-            const modal = new bootstrap.Modal(modalElement);
-            const modalBody = document.getElementById('alertModalBody');
-            if (modalBody) {
-                 // Use Bootstrap alert classes for styling within the modal body
-                 modalBody.innerHTML = '<div class="alert alert-' + type + ' mb-0">' + message + '</div>';
-            }
-             const modalTitle = document.getElementById('alertModalLabel');
-             if(modalTitle) {
-                 modalTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-             }
-            modal.show();
-        }
-    }
 </script>
 </html>

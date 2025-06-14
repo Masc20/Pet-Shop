@@ -28,7 +28,7 @@ class Controller {
      */
     protected function redirect($url, $message = null, $type = 'success') {
         if ($message) {
-            $_SESSION[$type] = $message;
+            setFlashMessage($type, $message);
         }
         
         header('Location: ' . BASE_URL . $url);

@@ -25,13 +25,38 @@ class Product {
     }
     
     public function create($data) {
-        $stmt = $this->pdo->prepare("INSERT INTO products (name, product_image, stock_quantity, type, price, description) VALUES (?, ?, ?, ?, ?, ?)");
-        return $stmt->execute([$data['name'], $data['product_image'], $data['stock_quantity'], $data['type'], $data['price'], $data['description']]);
+        $stmt = $this->pdo->prepare("INSERT INTO products (name, product_image, stock_quantity, type, price, description, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        return $stmt->execute([
+            $data['name'], 
+            $data['product_image'], 
+            $data['stock_quantity'], 
+            $data['type'], 
+            $data['price'], 
+            $data['description'],
+            $data['created_by'] ?? null
+        ]);
     }
     
     public function update($id, $data) {
-        $stmt = $this->pdo->prepare("UPDATE products SET name = ?, product_image = ?, stock_quantity = ?, type = ?, price = ?, description = ? WHERE id = ?");
-        return $stmt->execute([$data['name'], $data['product_image'], $data['stock_quantity'], $data['type'], $data['price'], $data['description'], $id]);
+        $sql = "UPDATE products SET 
+                name = ?, 
+                product_image = ?, 
+                stock_quantity = ?, 
+                type = ?, 
+                price = ?, 
+                description = ? 
+                WHERE id = ?";
+                
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([
+            $data['name'],
+            $data['product_image'],
+            $data['stock_quantity'],
+            $data['type'],
+            $data['price'],
+            $data['description'],
+            $id
+        ]);
     }
     
     public function updateStock($id, $quantity) {
@@ -82,7 +107,7 @@ class Product {
     public function getPaginated($limit, $offset, $categoryId = null, $minPrice = null, $maxPrice = null, $query = null, $sortBy = 'id', $sortOrder = 'DESC') {
         $sql = "SELECT p.*
                 FROM products p  
-                WHERE 1";
+                WHERE 1=1";
         $params = [];
 
         if ($query) {
@@ -90,7 +115,6 @@ class Product {
             $params[] = "%" . $query . "%";
             $params[] = "%" . $query . "%";
         }
-
 
         if ($minPrice !== null) {
             $sql .= " AND p.price >= ?";
@@ -103,14 +127,13 @@ class Product {
         }
 
         // Add sorting
-        $validSortColumns = ['name', 'price', 'stock_quantity', 'id'];
+        $validSortColumns = ['name', 'price', 'stock_quantity', 'id', 'created_at'];
         $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'id';
         $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
         
-        // Ensure proper table alias in ORDER BY clause
         $sql .= " ORDER BY p.{$sortBy} {$sortOrder}";
         
-        // Add LIMIT and OFFSET directly in the SQL string
+        // Add LIMIT and OFFSET
         $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
         $stmt = $this->pdo->prepare($sql);
@@ -267,15 +290,134 @@ class Product {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getProductTypeDistribution() {
-        $sql = "SELECT 
-                    type,
-                    COUNT(*) as count,
-                    SUM(CASE WHEN stock_quantity < 5 THEN 1 ELSE 0 END) as low_stock_count
-                FROM products 
-                GROUP BY type";
+    public function getProductTypeDistribution($userId = null) {
+        if ($userId === null) {
+            // Admin dashboard - get all products
+            $sql = "SELECT type, COUNT(*) as count FROM products GROUP BY type";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+        } else {
+            // User dashboard - get user's products
+            $sql = "SELECT type, COUNT(*) as count FROM products WHERE created_by = ? GROUP BY type";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$userId]);
+        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getUserProducts($userId, $limit = null, $offset = null, $search = '', $type = '', $stockStatus = '', $sortBy = 'id', $sortOrder = 'DESC') {
+        $sql = "SELECT * FROM products WHERE created_by = ?";
+        $params = [$userId];
+        
+        // Add search condition
+        if (!empty($search)) {
+            $sql .= " AND (name LIKE ? OR description LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+        
+        // Add type filter
+        if (!empty($type)) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+        
+        // Add stock status filter
+        if (!empty($stockStatus)) {
+            switch ($stockStatus) {
+                case 'in_stock':
+                    $sql .= " AND stock_quantity > 5";
+                    break;
+                case 'low_stock':
+                    $sql .= " AND stock_quantity > 0 AND stock_quantity <= 5";
+                    break;
+                case 'out_of_stock':
+                    $sql .= " AND stock_quantity = 0";
+                    break;
+            }
+        }
+        
+        // Add sorting
+        $validSortColumns = ['name', 'price', 'stock_quantity', 'id'];
+        $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'id';
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+        
+        $sql .= " ORDER BY {$sortBy} {$sortOrder}";
+        
+        if ($limit !== null) {
+            $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+        }
         
         $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function getUserProductsCount($userId, $search = '', $type = '', $stockStatus = '') {
+        $sql = "SELECT COUNT(*) FROM products WHERE created_by = ?";
+        $params = [$userId];
+        
+        // Add search condition
+        if (!empty($search)) {
+            $sql .= " AND (name LIKE ? OR description LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+        
+        // Add type filter
+        if (!empty($type)) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+        
+        // Add stock status filter
+        if (!empty($stockStatus)) {
+            switch ($stockStatus) {
+                case 'in_stock':
+                    $sql .= " AND stock_quantity > 5";
+                    break;
+                case 'low_stock':
+                    $sql .= " AND stock_quantity > 0 AND stock_quantity <= 5";
+                    break;
+                case 'out_of_stock':
+                    $sql .= " AND stock_quantity = 0";
+                    break;
+            }
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
+    }
+
+    public function delete($id, $userId = null) {
+        $sql = "DELETE FROM products WHERE id = ?";
+        $params = [$id];
+        
+        if ($userId !== null) {
+            $sql .= " AND created_by = ?";
+            $params[] = $userId;
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    public function getLowStockProductsCount($userId) {
+        $sql = "SELECT COUNT(*) as count FROM products WHERE created_by = ? AND stock_quantity < 5";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'];
+    }
+
+    public function getLowStockProducts($userId, $limit = 5) {
+        $sql = "SELECT id, name, type, stock_quantity FROM products 
+                WHERE created_by = ? AND stock_quantity < 5 
+                ORDER BY stock_quantity ASC LIMIT ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

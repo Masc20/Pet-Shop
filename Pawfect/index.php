@@ -116,7 +116,37 @@ switch ($path) {
         $controller = new UserController();
         $controller->updateAddress();
         break;
-    
+
+    case '/user/products':
+        require_once 'controllers/UserController.php';
+        $controller = new UserController();
+        $controller->products();
+        break;
+
+    case '/user/orders':
+        require_once 'controllers/UserController.php';
+        $controller = new UserController();
+        $controller->orders();
+        break;
+
+    case '/orders/cancel':
+        require_once 'controllers/OrderController.php';
+        $controller = new OrderController();
+        $controller->cancel($_POST['order_id']);
+        break;
+
+    case '/orders/update-status':
+        require_once 'controllers/OrderController.php';
+        $controller = new OrderController();
+        $controller->updateStatus($_POST['order_id'], $_POST['status']);
+        break;
+
+    case '/user/dashboard':
+        require_once 'controllers/UserController.php';
+        $controller = new UserController();
+        $controller->dashboard();
+        break;
+
     case '/adopted-pets':
         require_once 'controllers/PetController.php';
         $controller = new PetController();

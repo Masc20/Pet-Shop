@@ -26,7 +26,7 @@ class AuthController extends Controller {
                     $this->redirect('/');
                 }
             } else {
-                $_SESSION['error'] = 'Invalid credentials or account banned';
+                setFlashMessage('error', 'Invalid credentials or account banned');
             }
         }
         
@@ -52,13 +52,13 @@ class AuthController extends Controller {
             
             // Check if email exists
             if ($userModel->getByEmail($data['email'])) {
-                $_SESSION['error'] = 'Email already exists';
+                setFlashMessage('error', 'Email already exists');
             } else {
                 if ($userModel->create($data)) {
-                    $_SESSION['success'] = 'Registration successful! Please login.';
+                    setFlashMessage('success', 'Registration successful! Please login.');
                     $this->redirect('/login');
                 } else {
-                    $_SESSION['error'] = 'Registration failed';
+                    setFlashMessage('error', 'Registration failed');
                 }
             }
         }
